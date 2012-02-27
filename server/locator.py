@@ -68,6 +68,7 @@ if __name__ == "__main__":
 
     application = tornado.web.Application([
         (r"/static/(.*)", tornado.web.StaticFileHandler, {"path": os.path.join(ROOT_DIR, "static")}),
+        (r"/rpc", RpcRequestHandler),
         ],
         debug=DEBUG_MODE,
         template_path=os.path.join(ROOT_DIR, "templates"))
