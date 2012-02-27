@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="vertical"
+              android:layout_width="fill_parent"
+              android:layout_height="fill_parent"
+        >
+    <TextView
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:text="Test me like a tester would test a testy"
+            />
+    <Button
+            android:id="@+id/but_refresh"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:text="refresh" />
+    <TextView
+            android:id="@+id/text_routers"
+            android:scrollbars="vertical"
+            android:scrollbarAlwaysDrawVerticalTrack="true"
+            android:layout_height="fill_parent"
+            android:layout_width="fill_parent" />
+</LinearLayout>
+
