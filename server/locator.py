@@ -23,15 +23,19 @@ class RpcRequestHandler(tornado.web.RequestHandler):
 
     def __handle_request(self, args):
         try:
-            args = json_decode(args)
+            args = simplejson.loads(args)
             args = dict((str(k), v) for k, v in args.iteritems())
 
             method = args.pop("method")
         except Exception:
             self.send_error(400)
+            self.finish()
+            return
 
         if not method in RpcRequestHandler.RPC_METHODS:
             self.send_error(404)
+            self.finish()
+            return
 
         logging.info("RPC[%s]: args: %s" % (method, simplejson.dumps(args, sort_keys=True)))
         self.__rpc_method = method
