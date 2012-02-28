@@ -7,18 +7,55 @@
     <TextView
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:text="Test me like a tester would test a testy"
+            android:text="How many tests would a tester test if a tester could test tests??"
             />
+    <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content">
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Location Id:"
+                />
+        <EditText
+                android:id="@+id/text_location_id"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:text="null">
+        </EditText>
+    </LinearLayout>
+
+    <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content">
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="# Samples:"
+                />
+        <EditText
+                android:id="@+id/text_num_samples"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:text="10">
+        </EditText>
+    </LinearLayout>
+
+    <ProgressBar
+            android:id="@+id/progress_samples"
+            android:layout_height="wrap_content"
+            android:layout_width="fill_parent"
+            android:indeterminateOnly="false"
+            android:progressDrawable="@android:drawable/progress_horizontal"
+            android:indeterminateDrawable="@android:drawable/progress_indeterminate_horizontal">
+    </ProgressBar>
     <Button
-            android:id="@+id/but_refresh"
+            android:id="@+id/but_send_samples"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
-            android:text="refresh" />
-    <TextView
-            android:id="@+id/text_routers"
-            android:scrollbars="vertical"
-            android:scrollbarAlwaysDrawVerticalTrack="true"
-            android:layout_height="fill_parent"
-            android:layout_width="fill_parent" />
+            android:text="Send Samples" />
 </LinearLayout>
 
