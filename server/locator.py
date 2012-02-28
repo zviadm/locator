@@ -10,6 +10,7 @@ import tornado
 import tornado.ioloop
 import tornado.web
 
+import rpcs
 DEBUG_MODE = False
 
 # XXX: location samples device id-> list of scanResults
@@ -17,6 +18,7 @@ samples = {}
 
 class RpcRequestHandler(tornado.web.RequestHandler):
     RPC_METHODS = {
+        "location_sample": rpcs.location_sample,
         }
 
     def __handle_request(self, args):
