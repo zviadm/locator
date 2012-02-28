@@ -18,12 +18,12 @@ samples = {}
 
 class RpcRequestHandler(tornado.web.RequestHandler):
     RPC_METHODS = {
-        "location_sample": rpcs.location_sample,
+        "location_sample" : rpcs.location_sample,
         }
 
     def __handle_request(self, args):
         try:
-            args = simplejson.loads(args)
+            args = json_decode(args)
             args = dict((str(k), v) for k, v in args.iteritems())
 
             method = args.pop("method")
@@ -43,11 +43,20 @@ class RpcRequestHandler(tornado.web.RequestHandler):
         thread.start()
 
     def __async_rpc(self, method, kwargs):
-        ret = RpcRequestHandler.RPC_METHODS[method](**kwargs)
-        tornado.ioloop.IOLoop.instance().add_callback(functools.partial(self.__finish_request, ret))
+        try:
+            ret = RpcRequestHandler.RPC_METHODS[method](**kwargs)
+            ret = simplejson.dumps(ret)
+            tornado.ioloop.IOLoop.instance().add_callback(
+                    self.async_callback(functools.partial(self.__finish_request, ret)))
+        except:
+            # explicitly catch any type of exception here, transfer code to main thread and then reraise it
+            tornado.ioloop.IOLoop.instance().add_callback(
+                    self.async_callback(functools.partial(self.__error_request, sys.exc_info())))
+
+    def __error_request(self, exc_info):
+        raise exc_info[0], exc_info[1], exc_info[2]
 
     def __finish_request(self, ret):
-        ret = simplejson.dumps(ret)
         self.write(ret)
         self.finish()
 
