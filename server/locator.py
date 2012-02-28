@@ -18,7 +18,7 @@ samples = {}
 
 class RpcRequestHandler(tornado.web.RequestHandler):
     RPC_METHODS = {
-        "scan_result": rpcs.scan_result,
+        "location_sample": rpcs.location_sample,
         }
 
     def __handle_request(self, args):
