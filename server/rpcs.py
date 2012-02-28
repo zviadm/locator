@@ -16,7 +16,7 @@ def location_sample(device_id, location_id, timestamp, scan_results):
             except ValueError:
                 pass
 
-    with open(os.path.join("/srv/locdata", "%s%d.csv" % (location_id, max_index + 1)), "w") as f:
+    with open(os.path.join("/srv/locdata", "%s%02d.csv" % (location_id, max_index + 1)), "w") as f:
         for scan_result in scan_results:
             f.write("%s,%s,%s\n" % (scan_result["SSID"], scan_result["BSSID"], scan_result["level"]))
 
