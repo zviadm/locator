@@ -104,11 +104,14 @@ public class Main extends Activity
                 }
             }
 
-            // If some sort of error happened stop sending samples and quit
-            samplesToSend = 0;
+            if (samplesToSend == 0) {
+                textLocationId.setText("");
+            } else {
+                // If some sort of error happened stop sending samples and quit
+                samplesToSend = 0;
+            }
             butSendSamples.setEnabled(true);
             textLocationId.setEnabled(true);
-            textLocationId.setText("");
             textNumOfSamples.setEnabled(true);
         }
     }
