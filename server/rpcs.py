@@ -10,7 +10,7 @@ def location_sample(device_id, location_id, timestamp, scan_results):
     for csvfile in csvfiles:
         if csvfile.startswith(location_id):
             try:
-                index = int(csvfile[location_id:-4])
+                index = int(csvfile[len(location_id):-4])
                 if index > max_index:
                     max_index = index
             except ValueError:
