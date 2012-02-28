@@ -7,10 +7,12 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.http.AndroidHttpClient;
 import android.net.wifi.ScanResult;
+import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.Html;
+import android.text.format.Time;
 import android.util.Log;
 import android.view.View;
 import android.widget.*;
@@ -22,6 +24,9 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.protocol.HTTP;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -34,6 +39,8 @@ public class Main extends Activity
     public static final String TAG = "LOCATOR_MAIN";
 
     private int samplesToSend = 0;
+    private String deviceId = null;
+    
     private View butSendSamples = null;
     private EditText textNumOfSamples = null;
     private EditText textLocationId = null;
@@ -127,8 +134,28 @@ public class Main extends Activity
                 
                 WifiManager wm = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
                 List<ScanResult> scanResults = wm.getScanResults(); // Returns a <list> of scanResults
-                
-                String[] sampleJson = {""};
+
+                JSONObject sampleObj=new JSONObject();
+                try {
+                    sampleObj.put("method", "location_sample");
+                    sampleObj.put("device_id", deviceId);
+                    sampleObj.put("timestamp", (double) System.currentTimeMillis() / 1000.0);
+                    //obj.put("location_id", deviceId);
+
+                    JSONArray scanResultList=new JSONArray();
+                    for (ScanResult scanResult : scanResults) {
+                        JSONObject scanResultObj=new JSONObject();
+                        scanResultObj.put("SSID", scanResult.SSID);
+                        scanResultObj.put("BSSID", scanResult.BSSID);
+                        scanResultObj.put("level", scanResult.level);
+                        scanResultObj.put("frequency", scanResult.frequency);
+                        scanResultList.put(scanResultObj);
+                    }
+                    sampleObj.put("scan_results", scanResultList);
+                } catch (JSONException e) {
+                    Log.d(TAG, "Failed to json...", e);
+                }
+                String[] sampleJson = {sampleObj.toString()};
                 AsyncTask sendSampleTask = new SendSampleTask();
                 sendSampleTask.execute(sampleJson);
             }
@@ -142,6 +169,12 @@ public class Main extends Activity
                     butSendSamples.setEnabled(false);
                     textLocationId.setEnabled(false);
                     textNumOfSamples.setEnabled(false);
+
+                    if (deviceId == null) {
+                        WifiManager wifiMan = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+                        WifiInfo wifiInf = wifiMan.getConnectionInfo();
+                        deviceId = wifiInf.getMacAddress();
+                    }
 
                     samplesToSend = Integer.parseInt(textNumOfSamples.getText().toString());
                     progressSamples.setMax(samplesToSend);
