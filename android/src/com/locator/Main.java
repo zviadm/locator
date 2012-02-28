@@ -108,6 +108,7 @@ public class Main extends Activity
             samplesToSend = 0;
             butSendSamples.setEnabled(true);
             textLocationId.setEnabled(true);
+            textLocationId.setText("");
             textNumOfSamples.setEnabled(true);
         }
     }
@@ -139,6 +140,7 @@ public class Main extends Activity
                 try {
                     sampleObj.put("method", "location_sample");
                     sampleObj.put("device_id", deviceId);
+                    sampleObj.put("location_id", textLocationId.getText().toString());
                     sampleObj.put("timestamp", (double) System.currentTimeMillis() / 1000.0);
                     //obj.put("location_id", deviceId);
 
@@ -164,6 +166,12 @@ public class Main extends Activity
         butSendSamples.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                if (textLocationId.getText().toString().equals("")) {
+                    Toast toast = Toast.makeText(getApplicationContext(), "need to specify locationId!", Toast.LENGTH_SHORT);
+                    toast.show();
+                    return;
+                }
+                
                 WifiManager wm = (WifiManager) getSystemService(Context.WIFI_SERVICE);
                 if (wm.getWifiState() == WifiManager.WIFI_STATE_ENABLED) {
                     butSendSamples.setEnabled(false);
