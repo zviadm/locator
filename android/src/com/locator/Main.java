@@ -31,6 +31,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
+import java.util.Collections;
 import java.util.List;
 
 public class Main extends Activity
@@ -90,13 +91,13 @@ public class Main extends Activity
         }
 
         protected void onPostExecute(String errMsg) {
+            progressSamples.setProgress(progressSamples.getProgress() + samplesSent);
+            samplesToSend -= samplesSent;
+
             if (errMsg != null) {
                 Toast toast = Toast.makeText(getApplicationContext(), errMsg, Toast.LENGTH_SHORT);
                 toast.show();
             } else {
-                progressSamples.setProgress(progressSamples.getProgress() + samplesSent);
-                samplesToSend -= samplesSent;
-
                 if (samplesToSend > 0) {
                     WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
                     wm.startScan();
@@ -108,6 +109,7 @@ public class Main extends Activity
                 textLocationId.setText("");
             } else {
                 // If some sort of error happened stop sending samples and quit
+                textNumOfSamples.setText(Integer.toString(samplesToSend));
                 samplesToSend = 0;
             }
             butSendSamples.setEnabled(true);
@@ -127,18 +129,29 @@ public class Main extends Activity
         textNumOfSamples = (EditText)findViewById(R.id.text_num_samples);
         textLocationId = (EditText)findViewById(R.id.text_location_id);
         progressSamples = (ProgressBar)findViewById(R.id.progress_samples);
+        final TextView textRouters = (TextView)findViewById(R.id.text_routers);
 
         IntentFilter intent = new IntentFilter();
         intent.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
         registerReceiver(new BroadcastReceiver(){
             public void onReceive(Context context, Intent intent){
+                WifiManager wm = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+                List<ScanResult> scanResults = wm.getScanResults(); // Returns a <list> of scanResults
+                // set routers view too
+                StringBuilder routers = new StringBuilder();
+                for (ScanResult result : scanResults) {
+                    if (result.SSID.toLowerCase().startsWith("dropbox")) {
+                        routers.append("SSID: " + result.SSID + "\n");
+                        routers.append("BSSID: " + result.BSSID + "\n");
+                        routers.append("LEVEL: " + result.level + "\n");
+                        routers.append("\n");
+                    }
+                }
+                textRouters.setText(routers.toString());
+
                 if (samplesToSend == 0) {
                     return;
                 }
-                
-                WifiManager wm = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-                List<ScanResult> scanResults = wm.getScanResults(); // Returns a <list> of scanResults
-
                 JSONObject sampleObj=new JSONObject();
                 try {
                     sampleObj.put("method", "location_sample");
@@ -169,31 +182,30 @@ public class Main extends Activity
         butSendSamples.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (textLocationId.getText().toString().equals("")) {
-                    Toast toast = Toast.makeText(getApplicationContext(), "need to specify locationId!", Toast.LENGTH_SHORT);
-                    toast.show();
-                    return;
-                }
-                
                 WifiManager wm = (WifiManager) getSystemService(Context.WIFI_SERVICE);
                 if (wm.getWifiState() == WifiManager.WIFI_STATE_ENABLED) {
-                    butSendSamples.setEnabled(false);
-                    textLocationId.setEnabled(false);
-                    textNumOfSamples.setEnabled(false);
+                    if (textLocationId.getText().toString().equals("")) {
+                        Toast toast = Toast.makeText(getApplicationContext(), "need to specify locationId!", Toast.LENGTH_SHORT);
+                        toast.show();
 
-                    if (deviceId == null) {
-                        WifiManager wifiMan = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-                        WifiInfo wifiInf = wifiMan.getConnectionInfo();
-                        deviceId = wifiInf.getMacAddress();
+                        samplesToSend = 0;
+                    } else {
+                        butSendSamples.setEnabled(false);
+                        textLocationId.setEnabled(false);
+                        textNumOfSamples.setEnabled(false);
+
+                        if (deviceId == null) {
+                            WifiManager wifiMan = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+                            WifiInfo wifiInf = wifiMan.getConnectionInfo();
+                            deviceId = wifiInf.getMacAddress();
+                        }
+
+                        samplesToSend = Integer.parseInt(textNumOfSamples.getText().toString());
+                        progressSamples.setMax(samplesToSend);
+                        progressSamples.setProgress(0);
                     }
 
-                    samplesToSend = Integer.parseInt(textNumOfSamples.getText().toString());
-                    progressSamples.setMax(samplesToSend);
-                    progressSamples.setProgress(0);
-
-                    if (samplesToSend > 0) {
-                        wm.startScan();
-                    }
+                    wm.startScan();
                 } else {
                     Toast toast = Toast.makeText(getApplicationContext(), "wifi is turned off!", Toast.LENGTH_SHORT);
                     toast.show();
