@@ -56,11 +56,12 @@ def get_router_distance_ratios(router_readings):
         r2, l2 = router_readings[j]
 
         toret.append((r1, r2, 10 ** ((l2 - l1)/(10*2.1))))
+        # toret.append((r1, r2, exp ((l2 - l1)/(10*2.1))))
     return toret
 
 
 
-readings = get_normalized_readings('../newdata/standing_drew2.csv')
+readings = get_normalized_readings('../newdata/standing_client1.csv')
 
 NUM_BEST = len(readings)
 
@@ -84,21 +85,28 @@ from scipy import stats
 img = mpimg.imread('../map/part4.png')
 imgplot = plt.imshow(img)
 
-
-XMIN = 800
+MAX_PARTICLES = 200
+# XMIN = 800
+# XMAX = 1500
+# XSTEP = 25
+# YMIN = 100
+# YMAX = 1000
+# YSTEP = 25
+XMIN = 200
 XMAX = 1500
-XSTEP = 25
+XSTEP = 100
 YMIN = 100
-YMAX = 1000
-YSTEP = 25
-LOG_MIN_PROB=-100
-RATIO_STDEV=0.05
+YMAX = 1200
+YSTEP = 100
+LOG_MIN_PROB=-10
+RATIO_STDEV=1.5
 
-MOTION_STDEV = 1
+MOTION_STDEV = 25
 
 samples = [
     [1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)
     ]
+
 
 # x, y = zip(*samples)
 # plt.plot(x, y, 'o', markersize=2)
@@ -110,8 +118,8 @@ def observation_probability(router_ratios, xy):
         x2, y2 = ROUTER_POS[r2]
         x, y = xy
 
-        dist1 = math.sqrt((x - x1)**2 + (y - y1) ** 2 + 2.5**2)
-        dist2 = math.sqrt((x - x2)**2 + (y - y2) ** 2 + 2.5**2)
+        dist1 = math.sqrt((x - x1)**2/1600.0 + (y - y1) ** 2/1600.0 + 2.5**2)
+        dist2 = math.sqrt((x - x2)**2/1600.0 + (y - y2) ** 2/1600.0 + 2.5**2)
 
         # TODO height correction
         ll += log(max(exp(LOG_MIN_PROB), stats.norm(ratio, RATIO_STDEV).pdf(dist1 / dist2)))
@@ -119,25 +127,34 @@ def observation_probability(router_ratios, xy):
 
 observation_model = partial(observation_probability, router_ratios=ratios)
 
+# observation_model = partial(observation_probability, router_ratios=[
+#     ("AP-4-01", "AP-4-02", 1.0), 
+#     ("AP-4-02", "AP-4-03", 1.0), 
+#     ("AP-4-03", "AP-4-01", 1.0), 
+#     ],)
+
+# print "(500, 700): ",  observation_model(xy=(500, 700))
+# print "(500, 1100): ", observation_model(xy=(500, 1100))
+# print "(500, 300): ",  observation_model(xy=(500, 300))
+# print "(700, 700): ",  observation_model(xy=(700, 700))
+
+
 # obs reweight
 def reweight(samples):
     Z = 0.0
     for i in range(len(samples)):
         weight, xy = samples[i]
-        nw = weight * observation_model(xy=xy)
+        nw = weight * 10**observation_model(xy=xy)
         samples[i][0] = nw
         Z += nw
-     
+
     for i in range(len(samples)):
         samples[i][0] /= Z
 
 
-# motion
-
-
 # resample
 def resample(samples):
-    counts = random.multinomial(min(100, len(samples)), zip(*samples)[0])
+    counts = random.multinomial(min(MAX_PARTICLES, len(samples)), zip(*samples)[0])
     return [list(x) for x in zip(counts, zip(*samples)[1]) if x[0] > 0]
 
 def motion(samples):
@@ -148,25 +165,24 @@ def motion(samples):
             toret.append([1, (x + random.normal(0, MOTION_STDEV), y + random.normal(0, MOTION_STDEV))])
     return toret
 
-for i in range(15):
-    print len(samples), samples[:5]
-    reweight(samples)
-    print len(samples), samples[:5]
-    samples = resample(samples)
-    print len(samples), samples[:5]
-    samples = motion(samples)
-    print len(samples), samples[:5]
 
-
+reweight(samples)
 # draw contour of prob map
-# weights, locs = zip(*samples)
-# tmp = dict(zip(locs, weights))
-# Zs = [[tmp[(x, y)] if (x, y) in tmp else 0.0 for x in range(XMIN, XMAX, XSTEP)] for y in range(YMIN, YMAX, YSTEP)]
+weights, locs = zip(*samples)
+tmp = dict(zip(locs, weights))
+Zs = [[tmp[(x, y)] if (x, y) in tmp else 0.0 for x in range(XMIN, XMAX, XSTEP)] for y in range(YMIN, YMAX, YSTEP)]
 
 # print len(Zs), len(Zs[0]), Zs[0]
 
-# Cs = plt.contour(range(XMIN, XMAX, XSTEP), range(YMIN, YMAX, YSTEP), Zs)
-# cbar = plt.colorbar(Cs)
+Cs = plt.contour(range(XMIN, XMAX, XSTEP), range(YMIN, YMAX, YSTEP), Zs)
+cbar = plt.colorbar(Cs)
+
+for i in range(5):
+    # print len(samples), samples[:5]
+    samples = resample(samples)
+    samples = motion(samples)
+    reweight(samples)    
+    # print len(samples), samples[:5]
 
 
 
@@ -174,4 +190,8 @@ xs, ys = zip(*zip(*samples)[1])
 plt.plot(xs, ys, 'o', markersize=5)
 
 
+xs, ys = zip(*ROUTER_POS.values())
+plt.plot(xs, ys, 'ro', markersize=10)
+
 plt.savefig('test.png')
+

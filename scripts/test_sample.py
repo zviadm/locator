@@ -8,7 +8,8 @@ from numpy import *
 from scipy import stats
 
 test_label_matcher = re.compile(".*?_(.*?)\d*\.csv")
-train_label_matcher = re.compile(".*/(.*?)\.csv")
+train_label_matcher = re.compile(".*/(.*?)\d*\.csv")
+# train_label_matcher = re.compile(".*/(.*?)\.csv")
 
 
 fname = '../data/conference_room.csv'
@@ -27,7 +28,8 @@ class Location(object):
     with open(fname, 'rb') as f:
       reader = csv.reader(f)
       for ssid, device_id, strength in reader:
-        self.data[device_id].append(float(strength))
+        if True or 'Dropbox' in ssid:
+          self.data[device_id].append(float(strength))
     
     self.dists = {}
     for device, readings in self.data.iteritems():
@@ -56,6 +58,22 @@ TRAINING_DATA = [
   '../data/jiesdesk.csv',
   '../data/kitchen.csv',
   '../data/mobile.csv',
+  ]
+
+TRAINING_DATA = [
+  '../data/bathroom.csv',
+  '../data/conferenceroom.csv',
+  '../data/doorman.csv',
+  '../data/jiesdesk.csv',
+  '../data/kitchen.csv',
+  '../data/mobile.csv',
+  "../newdata/arrears1.csv",
+  "../newdata/breakfastbar1.csv",
+  "../newdata/breakuproom.csv",
+  "../newdata/bromancechamber1.csv",
+  "../newdata/client1.csv",
+  "../newdata/drew1.csv",
+  "../newdata/molly1.csv",
   ]
 
 
@@ -92,7 +110,7 @@ TEST_DATA = ['../data/standing_bathroom1.csv',
              '../data/standing_mobile2.csv',
              ]
 
-TEST_DATA = [
+TEST_DATA2 = [
   "../data/walking_bathroom1.csv",
   "../data/walking_bathroom10.csv",
   "../data/walking_bathroom2.csv",
@@ -145,13 +163,29 @@ TEST_DATA = [
   "../data/walking_mobile9.csv",
 ]
 
+TEST_DATA = [
+  "../newdata/standing_arrears1.csv",
+  "../newdata/standing_arrears2.csv",
+  "../newdata/standing_breakfastbar1.csv",
+  "../newdata/standing_breakfastbar2.csv",
+  "../newdata/standing_breakuproom1.csv",
+  "../newdata/standing_breakuproom2.csv",
+  "../newdata/standing_client1.csv",
+  "../newdata/standing_client2.csv",
+  "../newdata/standing_drew1.csv",
+  "../newdata/standing_drew2.csv",
+  "../newdata/standing_molly1.csv",
+  "../newdata/standing_molly2.csv",
+]
+
 testdata = {}
 for fname in TEST_DATA:
   toeval = {}
   with open(fname, 'rb') as fin:
     reader = csv.reader(fin)
     for s, device, strength in reader:
-      toeval[device] = strength 
+      if True or 'Dropbox' in s:
+        toeval[device] = strength 
   testdata[fname] = toeval
 
 
