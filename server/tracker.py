@@ -37,7 +37,8 @@ YSTEP = 100
 # variances for different methods
 LOG_MIN_PROB=-20
 MOTION_STDEV = 25
-COMBO_ALPHA = 1000
+COMBO_ALPHA = 100000000000000.0
+MIN_RATIO_STD = 0.2
 
 MAX_PARTICLES = 200
 
@@ -101,7 +102,7 @@ def distance_observation_probability(router_distances, xy):
     for r, distance in router_distances:
         x1, y1 = ROUTER_POS[r]
 
-        dist = math.sqrt((x - x1)**2/1600.0 + (y - y1)**2 / 1600.0 + 2.5**2)
+        dist = math.sqrt((x - x1)**2/1600.0 + (y - y1)**2 / 1600.0)
         ll += log(max(exp(LOG_MIN_PROB), stats.norm(distance, distance/4.0).pdf(dist)))
     #     print distance, dist, log(max(exp(LOG_MIN_PROB), stats.norm(distance, DISTANCE_STDEV).pdf(dist)))
     # print ll
@@ -123,7 +124,7 @@ def ratio_observation_probability(router_ratios, xy):
             continue
 
         # TODO height correction
-        ll += log(max(exp(LOG_MIN_PROB), stats.norm(ratio, ratio/2.0).pdf(dist1 / dist2)))
+        ll += log(max(exp(LOG_MIN_PROB), stats.norm(ratio, max(ratio/2.0, MIN_RATIO_STD)).pdf(dist1 / dist2)))
     return ll
 
 
@@ -178,7 +179,8 @@ def draw_image(samples):
 
     logging.info("about to write image")
     last_image = cStringIO.StringIO()
-    plt.savefig(last_image)
+    plt.axis([XMIN, XMAX, YMAX, YMIN])
+    plt.savefig(last_image, bbox_inches='tight', dpi=75)
     return last_image.getvalue()
 
 device_samples = [
@@ -198,7 +200,7 @@ def track_location(device_id, timestamp, router_levels):
         distance_model = partial(distance_observation_probability, router_distances=router_distances)
 
         def combo_model(xy):
-            # print exp(ratio_model(xy=xy)), 10000*exp(distance_model(xy=xy))
+            # logging.info("%.15f, %.15f" % (exp(ratio_model(xy=xy)), COMBO_ALPHA*exp(distance_model(xy=xy))))
             return log(exp(ratio_model(xy=xy)) + COMBO_ALPHA*exp(distance_model(xy=xy)))
 
         observation_models = [combo_model, distance_model, ratio_model]
