@@ -40,6 +40,7 @@ MOTION_STDEV = 25
 
 COMBO_ALPHA = 2
 MIN_RATIO_STD = 0.2
+MIN_RATIO_STD = 0.5
 
 MAX_PARTICLES = 200
 
@@ -109,7 +110,7 @@ def distance_observation_probability(router_distances, xy):
 
     for (x1, y1), distance in router_distances:
         dist = math.sqrt((x - x1)**2/1600.0 + (y - y1)**2 / 1600.0)
-        ll += max(LOG_MIN_PROB, loglikelihood(4.0*(1 - dist / distance)))
+        ll += max(LOG_MIN_PROB, loglikelihood((distance - dist) / max(MIN_DISTANCE_STD, distance/4.0)))
 
         # ll += log(max(exp(LOG_MIN_PROB), stats.norm(distance, distance/4.0).pdf(dist)))
     #     print distance, dist, log(max(exp(LOG_MIN_PROB), stats.norm(distance, DISTANCE_STDEV).pdf(dist)))
