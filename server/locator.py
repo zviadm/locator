@@ -75,10 +75,11 @@ class MapViewHandler(tornado.web.RequestHandler):
 
 class MapImageHandler(tornado.web.RequestHandler):
     def get(self):
+        image_n = int(self.get_argument("n"))
         map_images = get_map_images()
-        if map_images:
+        if len(map_images) > image_n:
             self.set_header("Content-Type", "image/png")
-            self.write(map_images[0])
+            self.write(map_images[image_n])
         else:
             self.set_header("Content-Type", "image/png")
         self.finish()

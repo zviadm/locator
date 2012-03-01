@@ -4,14 +4,6 @@
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <title>Tracking Like a Pro</title>
         <script language="JavaScript"><!--
-            function refreshIt() {
-               if (!document.images) return;
-               document.images['mapimage'].src = '/mapimage?' + Math.random();
-               document.images['mapimage'].onload = function () {;
-                   setTimeout('refreshIt()', 1000);
-               }
-            }
-
             var do_refresh = true;
 
             function refreshPage(force) {
@@ -31,7 +23,7 @@
             <input type="button" value="Track" onClick="refreshPage(true)">
             <input type="button" value="Pause" onClick="pauseRefresh()">
         </div>
-        <p><pre>{{ map_info }}</pre></p>
-        <img src="/mapimage" id=”mapimage” name="mapimage"></img>
+        <div><pre>{{ map_info }}</pre></div>
+        <img src="/mapimage?n=0"></img>
     </body>
 </html>
