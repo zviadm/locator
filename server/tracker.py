@@ -173,9 +173,8 @@ def draw_image(samples):
     xs, ys = zip(*zip(*samples)[1])
     plt.plot(xs, ys, 'bo', markersize=5)
 
-
-    xs, ys = zip(*ROUTER_POS.values())
-    plt.plot(xs, ys, 'ro', markersize=10)
+    for name, (x, y) in ROUTER_POS.iteritems():
+        plt.text(x, y, name[-2:], color='red')
 
     logging.info("about to write image")
     last_image = cStringIO.StringIO()
