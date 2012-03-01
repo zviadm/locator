@@ -36,7 +36,7 @@ YSTEP = 100
 # variances for different methods
 LOG_MIN_PROB=-10
 RATIO_STDEV=0.5
-DISTANCE_STDEV=4
+DISTANCE_STDEV=2
 MOTION_STDEV = 25
 COMBO_ALPHA = 10000
 
@@ -147,9 +147,6 @@ def motion(samples):
             toret.append([1, (x + random.normal(0, MOTION_STDEV), y + random.normal(0, MOTION_STDEV))])
     return toret
 
-
-
-
 def draw_contour(samples):
     # draw contour of prob map
     weights, locs = zip(*samples)
@@ -162,10 +159,11 @@ def draw_contour(samples):
     cbar = plt.colorbar(Cs)
 
 lock = threading.Lock()
-last_image = None
+last_image_lock = threading.Lock()
+last_image_data = None
 
 def draw_image(samples):
-    global last_image
+    global last_image_data
 
     plt.cla()
     imgplot = plt.imshow(IMG)
@@ -180,6 +178,8 @@ def draw_image(samples):
     logging.info("about to write image")
     last_image = cStringIO.StringIO()
     plt.savefig(last_image)
+    with last_image_lock:
+        last_image_data = last_image.getvalue()
 
 device_samples = defaultdict(lambda: [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)])
 
@@ -205,22 +205,16 @@ def track_location(device_id, timestamp, router_levels):
         draw_image(device_samples[device_id])
 
 def get_map_image():
-    # track_location('foo', time.time(), {
-    #     'AP-4-01': -50,
-    #     'AP-4-02': -70,
-    #     'AP-4-03': -70,
-    #     })
-    with lock:
-        if last_image:
-            logging.info("got last image")
-            return last_image.getvalue()
-        else:
-            logging.info("no last image")
-            with open("../map/part4.png", "r") as f:
-                return f.read()
+    global last_image_data
+    if not last_image_data:
+        with lock:
+            if not last_image_data:
+                plt.cla()
+                imgplot = plt.imshow(IMG)
+                xs, ys = zip(*ROUTER_POS.values())
+                plt.plot(xs, ys, 'ro', markersize=10)
 
-# track_location('foo', time.time(), {
-#     'AP-4-01': -50,
-#     'AP-4-02': -70,
-#     'AP-4-03': -70,
-#     })
+                last_image = cStringIO.StringIO()
+                plt.savefig(last_image)
+                last_image_data = last_image.getvalue()
+    return last_image_data

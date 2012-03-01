@@ -6,13 +6,31 @@
         <script language="JavaScript"><!--
             function refreshIt() {
                if (!document.images) return;
-               document.images['mapimage'].src = '/mapimage.png?' + Math.random();
-               setTimeout('refreshIt()', 3000);
+               document.images['mapimage'].src = '/mapimage?' + Math.random();
+               document.images['mapimage'].onload = function () {;
+                   setTimeout('refreshIt()', 1000);
+               }
+            }
+
+            var do_refresh = true;
+
+            function refreshPage(force) {
+                if (do_refresh || force) {
+                    window.location.reload()
+                }
+            }
+
+            function pauseRefresh() {
+                do_refresh = false;
             }
         //--></script>
     </head>
-    <body onLoad=" setTimeout('refreshIt()', 3000)">
+    <body onLoad=" setTimeout('refreshPage(false)', 1000)">
         <h1 align="center">Big Brother is Watching...</h1>
-        <img src="/mapimage.png" id=”mapimage” name="mapimage"></img>
+        <div>
+            <input type="button" value="Track" onClick="refreshPage(true)">
+            <input type="button" value="Pause" onClick="pauseRefresh()">
+        </div>
+        <img src="/mapimage" id=”mapimage” name="mapimage"></img>
     </body>
 </html>
