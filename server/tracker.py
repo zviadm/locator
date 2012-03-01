@@ -37,7 +37,9 @@ YSTEP = 100
 # variances for different methods
 LOG_MIN_PROB=-20
 MOTION_STDEV = 25
+
 COMBO_ALPHA = 2
+MIN_RATIO_STD = 0.2
 
 MAX_PARTICLES = 200
 
@@ -104,8 +106,9 @@ def loglikelihood(x):
 def distance_observation_probability(router_distances, xy):
     ll = 0
     x, y = xy
+
     for (x1, y1), distance in router_distances:
-        dist = math.sqrt((x - x1)**2/1600.0 + (y - y1)**2 / 1600.0 + 2.5**2)
+        dist = math.sqrt((x - x1)**2/1600.0 + (y - y1)**2 / 1600.0)
         ll += max(LOG_MIN_PROB, loglikelihood(4.0*(1 - dist / distance)))
 
         # ll += log(max(exp(LOG_MIN_PROB), stats.norm(distance, distance/4.0).pdf(dist)))
@@ -132,7 +135,7 @@ def ratio_observation_probability(router_ratios, xy):
         #     continue
 
         # TODO height correction
-        ll += max(LOG_MIN_PROB, loglikelihood(2.0*(new_ratio/ratio-1)))
+        ll += max(LOG_MIN_PROB, loglikelihood((new_ratio-ratio)/(max(ratio/2.0, MIN_RATIO_STD))))
         # ll += log(max(exp(LOG_MIN_PROB), stats.norm(ratio, ratio/2.0).pdf(dist1 / dist2)))
     return ll
 
@@ -188,10 +191,15 @@ def draw_image(samples):
 
     logging.info("about to write image")
     last_image = cStringIO.StringIO()
-    plt.savefig(last_image)
+    plt.axis([XMIN, XMAX, YMAX, YMIN])
+    plt.savefig(last_image, bbox_inches='tight', dpi=75)
     return last_image.getvalue()
 
-device_samples = defaultdict(lambda: [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)])
+device_samples = [
+        defaultdict(lambda: [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)]),
+        defaultdict(lambda: [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)]),
+        defaultdict(lambda: [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)]),
+        ]
 
 
 def get_mean_and_variance(samples):
@@ -216,16 +224,18 @@ def track_location(device_id, timestamp, router_levels):
         distance_model = partial(distance_observation_probability, router_distances=router_distances)
 
         def combo_model(xy):
-            # print exp(ratio_model(xy=xy)), 10000*exp(distance_model(xy=xy))
+            # logging.info("%.15f, %.15f" % (exp(ratio_model(xy=xy)), COMBO_ALPHA*exp(distance_model(xy=xy))))
             return ratio_model(xy=xy) + COMBO_ALPHA*distance_model(xy=xy)
 
-        observation_model = combo_model
+        observation_models = [combo_model, distance_model, ratio_model]
 
-        reweight(device_samples[device_id], observation_model)
-        #draw_contour(device_samples[device_id])
-        device_samples[device_id] = resample(device_samples[device_id])
-        device_samples[device_id] = motion(device_samples[device_id])
-        image_data = draw_image(device_samples[device_id])
+        image_data = []
+        for i, model in enumerate(observation_models):
+            reweight(device_samples[i][device_id], model)
+            #draw_contour(device_samples[device_id])
+            device_samples[i][device_id] = resample(device_samples[i][device_id])
+            device_samples[i][device_id] = motion(device_samples[i][device_id])
+            image_data.append(draw_image(device_samples[i][device_id]))
 
         # update map information
         update_map_info({
@@ -234,5 +244,5 @@ def track_location(device_id, timestamp, router_levels):
                 "router dists  : " + " : ".join(("(%s, %6.3f)" % x) for x in router_distances) + "\n\n" + \
                 "router_ratios : " + " : ".join(("(%s, %s, %.3f)" % x) for x in router_ratios) + "\n" + \
                 "",
-            "images" : [image_data],
+            "images" : image_data,
             })
