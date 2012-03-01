@@ -35,11 +35,9 @@ YMAX = 1200
 YSTEP = 100
 
 # variances for different methods
-LOG_MIN_PROB=-10
-RATIO_STDEV=0.5
-DISTANCE_STDEV=2
+LOG_MIN_PROB=-20
 MOTION_STDEV = 25
-COMBO_ALPHA = 10000
+COMBO_ALPHA = 1000
 
 MAX_PARTICLES = 200
 
@@ -70,18 +68,22 @@ def get_router_distance_ratios(router_readings):
         r1, l1 = router_readings[i]
         r2, l2 = router_readings[j]
 
-        toret.append((r1, r2, 10 ** ((l2 - l1)/(10*N))))
+        if l1 > l2:
+            toret.append((r1, r2, 10 ** ((l2 - l1)/(10*N))))
+        else:
+            toret.append((r2, r1, 10 ** ((l1 - l2)/(10*N))))
     return toret
 
 def get_distance_from_level(level):
     # from wikipedia
     level = -level
-    if level < 60:
-        n = 2.1
-    elif level < 80:
-        n = 2.5
-    else:
-        n = 2.9
+    # if level < 60:
+    #     n = 2.1
+    # elif level < 80:
+    #     n = 2.5
+    # else:
+    #     n = 2.9
+    n = 2.1
 
     C = 20.0 * math.log(4.0 * math.pi / WAVELENGTH, 10)
     r_in_meters = 10 ** ((level - C) / (10.0 * n))
@@ -100,7 +102,7 @@ def distance_observation_probability(router_distances, xy):
         x1, y1 = ROUTER_POS[r]
 
         dist = math.sqrt((x - x1)**2/1600.0 + (y - y1)**2 / 1600.0 + 2.5**2)
-        ll += log(max(exp(LOG_MIN_PROB), stats.norm(distance, DISTANCE_STDEV).pdf(dist)))
+        ll += log(max(exp(LOG_MIN_PROB), stats.norm(distance, distance/4.0).pdf(dist)))
     #     print distance, dist, log(max(exp(LOG_MIN_PROB), stats.norm(distance, DISTANCE_STDEV).pdf(dist)))
     # print ll
     # print
@@ -116,9 +118,12 @@ def ratio_observation_probability(router_ratios, xy):
 
         dist1 = math.sqrt((x - x1)**2/1600.0 + (y - y1) ** 2/1600.0 + 2.5**2)
         dist2 = math.sqrt((x - x2)**2/1600.0 + (y - y2) ** 2/1600.0 + 2.5**2)
+        if (dist1/dist2) > 1.4:
+            ll += LOG_MIN_PROB
+            continue
 
         # TODO height correction
-        ll += log(max(exp(LOG_MIN_PROB), stats.norm(ratio, RATIO_STDEV).pdf(dist1 / dist2)))
+        ll += log(max(exp(LOG_MIN_PROB), stats.norm(ratio, ratio/2.0).pdf(dist1 / dist2)))
     return ll
 
 
