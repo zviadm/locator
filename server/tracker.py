@@ -182,7 +182,11 @@ def draw_image(samples):
     plt.savefig(last_image)
     return last_image.getvalue()
 
-device_samples = defaultdict(lambda: [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)])
+device_samples = [
+        defaultdict(lambda: [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)]),
+        defaultdict(lambda: [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)]),
+        defaultdict(lambda: [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)]),
+        ]
 
 def track_location(device_id, timestamp, router_levels):
     global device_samples
@@ -198,13 +202,15 @@ def track_location(device_id, timestamp, router_levels):
             # print exp(ratio_model(xy=xy)), 10000*exp(distance_model(xy=xy))
             return log(exp(ratio_model(xy=xy)) + COMBO_ALPHA*exp(distance_model(xy=xy)))
 
-        observation_model = combo_model
+        observation_models = [combo_model, distance_model, ratio_model]
 
-        reweight(device_samples[device_id], observation_model)
-        #draw_contour(device_samples[device_id])
-        device_samples[device_id] = resample(device_samples[device_id])
-        device_samples[device_id] = motion(device_samples[device_id])
-        image_data = draw_image(device_samples[device_id])
+        image_data = []
+        for i, model in enumerate(observation_models):
+            reweight(device_samples[i][device_id], model)
+            #draw_contour(device_samples[device_id])
+            device_samples[i][device_id] = resample(device_samples[i][device_id])
+            device_samples[i][device_id] = motion(device_samples[i][device_id])
+            image_data.append(draw_image(device_samples[i][device_id]))
 
         # update map information
         update_map_info({
@@ -213,5 +219,5 @@ def track_location(device_id, timestamp, router_levels):
                 "router dists  : " + " : ".join(("(%s, %6.3f)" % x) for x in router_distances) + "\n\n" + \
                 "router_ratios : " + " : ".join(("(%s, %s, %.3f)" % x) for x in router_ratios) + "\n" + \
                 "",
-            "images" : [image_data],
+            "images" : image_data,
             })
