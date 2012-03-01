@@ -7,11 +7,11 @@
             function refreshIt() {
                if (!document.images) return;
                document.images['mapimage'].src = '/mapimage.png?' + Math.random();
-               setTimeout('refreshIt()', 1000);
+               setTimeout('refreshIt()', 3000);
             }
         //--></script>
     </head>
-    <body onLoad=" setTimeout('refreshIt()', 1000)">
+    <body onLoad=" setTimeout('refreshIt()', 3000)">
         <h1 align="center">Big Brother is Watching...</h1>
         <img src="/mapimage.png" id=”mapimage” name="mapimage"></img>
     </body>

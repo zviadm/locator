@@ -10,6 +10,9 @@ from collections import defaultdict
 from operator import itemgetter
 from functools import partial
 
+# Force matplotlib to not use any Xwindows backend.
+import matplotlib
+matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
@@ -59,7 +62,7 @@ ROUTER_POS = {
 
 def get_router_distance_ratios(router_readings):
     NUM_BEST = len(router_readings)
-    
+
     idx = [(i,j) for i in range(NUM_BEST) for j in range(i+1, NUM_BEST)]
     toret = []
     for i, j in idx:
@@ -91,7 +94,7 @@ def get_distances_from_readings(router_readings):
 
 def distance_observation_probability(router_distances, xy):
     ll = 0
-    x, y = xy    
+    x, y = xy
     for r, distance in router_distances:
         x1, y1 = ROUTER_POS[r]
 
@@ -164,9 +167,11 @@ last_image = None
 def draw_image(samples):
     global last_image
 
+    plt.cla()
     imgplot = plt.imshow(IMG)
+
     xs, ys = zip(*zip(*samples)[1])
-    plt.plot(xs, ys, 'o', markersize=5)
+    plt.plot(xs, ys, 'bo', markersize=5)
 
 
     xs, ys = zip(*ROUTER_POS.values())
@@ -175,8 +180,6 @@ def draw_image(samples):
     logging.info("about to write image")
     last_image = cStringIO.StringIO()
     plt.savefig(last_image)
-    plt.savefig('test.png')
-
 
 device_samples = defaultdict(lambda: [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)])
 
