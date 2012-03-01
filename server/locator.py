@@ -12,6 +12,7 @@ import tornado.web
 
 import rpcs
 import tracker
+from tracker_info import get_map_info, get_map_images
 DEBUG_MODE = False
 
 class RpcRequestHandler(tornado.web.RequestHandler):
@@ -69,12 +70,17 @@ class RpcRequestHandler(tornado.web.RequestHandler):
 
 class MapViewHandler(tornado.web.RequestHandler):
     def get(self):
-        self.render("mapview.html")
+        map_info = get_map_info()
+        self.render("mapview.html", map_info=map_info)
 
 class MapImageHandler(tornado.web.RequestHandler):
     def get(self):
-        self.set_header("Content-Type", "image/png")
-        self.write(tracker.get_map_image())
+        map_images = get_map_images()
+        if map_images:
+            self.set_header("Content-Type", "image/png")
+            self.write(map_images[0])
+        else:
+            self.set_header("Content-Type", "image/png")
         self.finish()
 
 if __name__ == "__main__":

@@ -19,6 +19,7 @@ import matplotlib.image as mpimg
 from numpy import log, exp, random
 from scipy import stats
 
+from tracker_info import update_map_info
 # map boundaries to use
 # XMIN = 800
 # XMAX = 1500
@@ -159,12 +160,8 @@ def draw_contour(samples):
     cbar = plt.colorbar(Cs)
 
 lock = threading.Lock()
-last_image_lock = threading.Lock()
-last_image_data = None
 
 def draw_image(samples):
-    global last_image_data
-
     plt.cla()
     imgplot = plt.imshow(IMG)
 
@@ -178,19 +175,19 @@ def draw_image(samples):
     logging.info("about to write image")
     last_image = cStringIO.StringIO()
     plt.savefig(last_image)
-    with last_image_lock:
-        last_image_data = last_image.getvalue()
+    return last_image.getvalue()
 
 device_samples = defaultdict(lambda: [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)])
 
 def track_location(device_id, timestamp, router_levels):
     global device_samples
     with lock:
-        readings = router_levels.items()
+        readings = sorted(router_levels.iteritems(), key=itemgetter(1), reverse=True)
+        router_ratios = get_router_distance_ratios(readings)
+        router_distances = get_distances_from_readings(readings)
 
-        ratio_model = partial(ratio_observation_probability, router_ratios=get_router_distance_ratios(readings))
-
-        distance_model = partial(distance_observation_probability, router_distances=get_distances_from_readings(readings))
+        ratio_model = partial(ratio_observation_probability, router_ratios=router_ratios)
+        distance_model = partial(distance_observation_probability, router_distances=router_distances)
 
         def combo_model(xy):
             # print exp(ratio_model(xy=xy)), 10000*exp(distance_model(xy=xy))
@@ -202,19 +199,14 @@ def track_location(device_id, timestamp, router_levels):
         #draw_contour(device_samples[device_id])
         device_samples[device_id] = resample(device_samples[device_id])
         device_samples[device_id] = motion(device_samples[device_id])
-        draw_image(device_samples[device_id])
+        image_data = draw_image(device_samples[device_id])
 
-def get_map_image():
-    global last_image_data
-    if not last_image_data:
-        with lock:
-            if not last_image_data:
-                plt.cla()
-                imgplot = plt.imshow(IMG)
-                xs, ys = zip(*ROUTER_POS.values())
-                plt.plot(xs, ys, 'ro', markersize=10)
-
-                last_image = cStringIO.StringIO()
-                plt.savefig(last_image)
-                last_image_data = last_image.getvalue()
-    return last_image_data
+        # update map information
+        update_map_info({
+            "info" : \
+                "readings      : " + " : ".join(("(%s, %6d)" % x) for x in readings) + "\n" + \
+                "router dists  : " + " : ".join(("(%s, %6.3f)" % x) for x in router_distances) + "\n\n" + \
+                "router_ratios : " + " : ".join(("(%s, %s, %.3f)" % x) for x in router_ratios) + "\n" + \
+                "",
+            "images" : [image_data],
+            })
