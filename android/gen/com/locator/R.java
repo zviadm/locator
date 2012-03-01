@@ -14,10 +14,10 @@ public final class R {
         public static final int icon=0x7f020000;
     }
     public static final class id {
-        public static final int but_send_samples=0x7f050003;
-        public static final int progress_samples=0x7f050002;
-        public static final int text_location_id=0x7f050000;
-        public static final int text_num_samples=0x7f050001;
+        public static final int but_end_tracking=0x7f050002;
+        public static final int but_snapshot=0x7f050003;
+        public static final int but_start_tracking=0x7f050001;
+        public static final int text_num_samples=0x7f050000;
         public static final int text_routers=0x7f050004;
     }
     public static final class layout {

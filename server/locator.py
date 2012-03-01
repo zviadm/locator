@@ -84,6 +84,10 @@ class MapImageHandler(tornado.web.RequestHandler):
             self.set_header("Content-Type", "image/png")
         self.finish()
 
+class Map2ViewHandler(tornado.web.RequestHandler):
+    def get(self):
+        self.render("map2view.html")
+
 if __name__ == "__main__":
     assert __file__
     ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -102,6 +106,7 @@ if __name__ == "__main__":
         (r"/rpc", RpcRequestHandler),
         (r"/map", MapViewHandler),
         (r"/mapimage", MapImageHandler),
+        (r"/map2", Map2ViewHandler),
         ],
         debug=DEBUG_MODE,
         template_path=os.path.join(ROOT_DIR, "templates"))
