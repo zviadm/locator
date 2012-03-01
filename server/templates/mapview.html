@@ -2,10 +2,17 @@
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-        <title>cLogger - Cool Graphs</title>
+        <title>Tracking Like a Pro</title>
+        <script language="JavaScript"><!--
+            function refreshIt() {
+               if (!document.images) return;
+               document.images['mapimage'].src = '/mapimage.png?' + Math.random();
+               setTimeout('refreshIt()', 1000);
+            }
+        //--></script>
     </head>
-    <body>
+    <body onLoad=" setTimeout('refreshIt()', 1000)">
         <h1 align="center">Big Brother is Watching...</h1>
-        <img src="/mapimage.png"></img>
+        <img src="/mapimage.png" id=”mapimage” name="mapimage"></img>
     </body>
 </html>
