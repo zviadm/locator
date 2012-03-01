@@ -1,6 +1,8 @@
 from __future__ import with_statement, absolute_import
-
 import os
+import threading
+
+import tracker
 
 def location_sample(device_id, location_id, timestamp, scan_results):
     LOCDATA_DIR = "/srv/locdata"
@@ -19,4 +21,9 @@ def location_sample(device_id, location_id, timestamp, scan_results):
     with open(os.path.join("/srv/locdata", "%s%02d.csv" % (location_id, max_index + 1)), "w") as f:
         for scan_result in scan_results:
             f.write("%s,%s,%s\n" % (scan_result["SSID"], scan_result["BSSID"], scan_result["level"]))
+    return { "ret" : "ok" }
+
+def track_location(device_id, timestamp, router_levels):
+    tracker.track_location(device_id, timestamp, router_levels)
+    return { "ret" : "ok" }
 

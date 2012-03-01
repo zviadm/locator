@@ -11,14 +11,13 @@ import tornado.ioloop
 import tornado.web
 
 import rpcs
+import tracker
 DEBUG_MODE = False
-
-# XXX: location samples device id-> list of scanResults
-samples = {}
 
 class RpcRequestHandler(tornado.web.RequestHandler):
     RPC_METHODS = {
         "location_sample" : rpcs.location_sample,
+        "track_location"  : rpcs.track_location,
         }
 
     def __handle_request(self, args):
@@ -68,6 +67,16 @@ class RpcRequestHandler(tornado.web.RequestHandler):
     def post(self):
         return self.__handle_request(self.request.body)
 
+class MapViewHandler(tornado.web.RequestHandler):
+    def get(self):
+        self.render("mapview.html")
+
+class MapImageHandler(tornado.web.RequestHandler):
+    def get(self):
+        self.set_header("Content-Type", "image/png")
+        self.write(tracker.get_map_image())
+        self.finish()
+
 if __name__ == "__main__":
     assert __file__
     ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -84,6 +93,8 @@ if __name__ == "__main__":
     application = tornado.web.Application([
         (r"/static/(.*)", tornado.web.StaticFileHandler, {"path": os.path.join(ROOT_DIR, "static")}),
         (r"/rpc", RpcRequestHandler),
+        (r"/map", MapViewHandler),
+        (r"/mapimage.png", MapImageHandler),
         ],
         debug=DEBUG_MODE,
         template_path=os.path.join(ROOT_DIR, "templates"))
