@@ -36,7 +36,8 @@ class Location(object):
       if all([x > SIGNAL_STRENGTH_THRESH for x in readings]):
         # if std(readings) == 0:
         #   print device, mean(readings), std(readings), max(readings), min(readings), len(readings)
-        self.dists[device] = stats.norm(mean(readings), max(0.2, std(readings)))
+        # self.dists[device] = stats.norm(mean(readings), max(0.2, std(readings)))
+        self.dists[device] = (mean(readings), max(0.2, std(readings)))
 
   def logprob(self, readings):
     all_devices = set(readings.keys()).union(set(self.dists.keys()))
@@ -44,7 +45,8 @@ class Location(object):
     ll = 0.0
     for device in all_devices:
       if device in readings and device in self.dists:
-        ll += log(max(exp(LOG_MIN_PROB), self.dists[device].pdf(float(readings[device]))))
+        ll += max(LOG_MIN_PROB, loglikelihood((float(readings[device]) - self.dists[device][0])/self.dists[device][1])
+        # ll += log(max(exp(LOG_MIN_PROB), self.dists[device].pdf(float(readings[device]))))
       elif device in readings and readings[device] > SIGNAL_STRENGTH_THRESH: # in readings not in model
         ll += LOG_MIN_PROB
       elif device in self.dists: # in model not in readings

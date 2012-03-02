@@ -104,13 +104,14 @@ def get_router_distance_ratios(router_readings):
             toret.append((ROUTER_POS[r2], ROUTER_POS[r1], 10 ** ((l1 - l2)/(10*N))))
     return toret
 
-def peval(coeffs, x):
-    a, b, c = coeffs
-    return a * x ** 2 + b * x + c
+def lin_eval(coeffs, x):
+    a, b = coeffs
+    return a * x + b
 
 def get_distance_from_level(level):
     # n = 2.1
-    n = peval([  6.66666667e-05,  -1.06666667e-02,   1.62000000e+00], level)
+    n = lin_eval([-0.07192023 -2.40415772], level)
+    # n = peval([  6.66666667e-05,  -1.06666667e-02,   1.62000000e+00], level)
     # n = peval([  1.16666667e-03,   8.83333333e-02,   3.60000000e+00], level)
 
     # from wikipedia
