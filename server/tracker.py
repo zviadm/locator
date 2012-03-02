@@ -440,6 +440,9 @@ def track_location(device_id, timestamp, router_levels=None, scan_results=None):
             reweight(device_samples[i][device_id], model)
             #draw_contour(device_samples[device_id])
             device_samples[i][device_id] = resample(device_samples[i][device_id])
+            if len(device_samples[i][device_id]) == 0:
+                device_samples[i][device_id] = defaultdict(lambda: [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)])
+
             mean_xy, var_xy = get_mean_and_variance(device_samples[i][device_id])
             #image_data.append(draw_image(device_samples[i][device_id]))
             device_samples[i][device_id] = motion(device_samples[i][device_id])
