@@ -52,6 +52,36 @@
                 android:layout_weight="1.0"
                 android:text="Snapshot" />
     </LinearLayout>
+    <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content">
+        <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="locationId: "
+                />
+        <EditText
+                android:id="@+id/text_location_id"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:text="">
+        </EditText>
+    </LinearLayout>
+    <Button
+            android:id="@+id/but_gather_samples"
+            android:layout_height="wrap_content"
+            android:layout_width="fill_parent"
+            android:text="Gather Samples" />
+    <ProgressBar
+            android:id="@+id/progress_samples"
+            android:layout_height="wrap_content"
+            android:layout_width="fill_parent"
+            android:indeterminateOnly="false"
+            android:progressDrawable="@android:drawable/progress_horizontal"
+            android:indeterminateDrawable="@android:drawable/progress_indeterminate_horizontal">
+    </ProgressBar>
     <ScrollView
             android:layout_width="fill_parent"
             android:layout_height="fill_parent">
