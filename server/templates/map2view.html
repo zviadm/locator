@@ -37,8 +37,11 @@
                             var ret = JSON.parse(xmlhttp.responseText);
                             debug_info = ret["debug_info"];
                             $("#infotext").empty();
-                            $("#infotext").append('<pre style="color:green;background:black;font-weight:bold">POS: (' + last_pos_x + ", " + last_pos_y + ") DIST: " + dist_xy + '</pre>');
-                            $("#infotext").append('<pre style="color:green;background:black;font-weight:bold">' + debug_info + '</pre>');
+                            $("#infotext").append(
+                                '<pre style="color:green;background:black;font-weight:bold">' +
+                                    'POS: (' + last_pos_x + ', ' + last_pos_y + ') DIST: ' + dist_xy + "\n" +
+                                    debug_info +
+                                '</pre>');
 
                             for (var device in ret["devices"]) {
                                 var device_ret = ret["devices"][device];
@@ -62,7 +65,7 @@
                                     current_locations[device] = [loc_x, loc_y];
                                     current_steps[device] = 0;
                                 } else {
-                                    current_steps[device] = LOCATION_UPDATE_RATE / ANIMATION_UPDATE_RATE;
+                                    current_steps[device] = LOCATION_UPDATE_RATE / ANIMATION_UPDATE_RATE + 4;
                                 }
 
                                 device_stats[device] = device_ret;
@@ -94,11 +97,11 @@
                         var width = 90;
                         var height = 120;
                     } else {
-                        var width = Math.floor(device_stat.variance[0]);
-                        var height = Math.floor(device_stat.variance[1]);
+                        var width = Math.floor(device_stat.variance[0]) * SCALE;
+                        var height = Math.floor(device_stat.variance[1]) * SCALE;
                     }
-                    var loc_x = Math.floor(current_locations[device][0] * SCALE) + (width / 2.0);
-                    var loc_y = Math.floor(current_locations[device][1] * SCALE) + (height / 2.0);
+                    var loc_x = Math.floor(current_locations[device][0] * SCALE) - (width / 2.0);
+                    var loc_y = Math.floor(current_locations[device][1] * SCALE) - (height / 2.0);
 
                     if (device in DEVICE_TO_NAME) {
                         // when doing image all what matters is the x,y
