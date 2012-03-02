@@ -40,7 +40,8 @@ MAX_PARTICLES = 200
 
 # physical constants for determining path loss (wikipedia)
 WAVELENGTH = 0.125
-N_COEFFS = [-0.07192023, -2.40415772]
+# N_COEFFS = [-0.07192023, -2.40415772]
+N_COEFFS = [-0.07363796 -2.52218124]
 
 # map constants
 ROUTER_HEIGHT = 2.1
@@ -87,6 +88,10 @@ def lin_eval(coeffs, x):
     a, b = coeffs
     return a * x + b
 
+def compute_N(level):
+    return max(2, lin_eval(N_COEFFS, level))
+
+
 def get_router_distance_ratios(router_readings):
     NUM_BEST = len(router_readings)
 
@@ -96,7 +101,7 @@ def get_router_distance_ratios(router_readings):
         r1, l1 = router_readings[i]
         r2, l2 = router_readings[j]
 
-        avgN = 0.5*(lin_eval(N_COEFFS, l1) + lin_eval(N_COEFFS, l2))
+        avgN = 0.5*(compute_N(l1) + compute_N(l2))
         if l1 > l2:
             toret.append((ROUTER_POS[r1], ROUTER_POS[r2], 10 ** ((l2 - l1)/(10*avgN))))
         else:
@@ -105,7 +110,7 @@ def get_router_distance_ratios(router_readings):
 
 
 def get_distance_from_level(level):
-    n = lin_eval(N_COEFFS, level)
+    n = compute_N(level)
 
     # from wikipedia
     level = -level

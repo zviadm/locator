@@ -39,11 +39,10 @@ ROUTER_POS = {
         }
 
 
-
 DATA = [
     '../locdata/zviad1.csv',
     '../locdata/zviad2.csv',
-    # '../locdata/zviad3.csv',
+    '../locdata/zviad3.csv',
     '../locdata/zviad4.csv',
     '../locdata/zviad5.csv',
     '../locdata/zviad6.csv',

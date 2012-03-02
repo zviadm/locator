@@ -76,8 +76,8 @@ def generate_figure(indata='../locdata/all_zviad.csv', foutname='test.png'):
      
     plt.cla()
      
-    toplot = [(get_implied_N(*x), x[1]) for x in data if x[1] < -50]
-    toplot = [(y, x) for (y, x) in toplot if -0.14*x - 6 > y]
+    toplot = [(get_implied_N(*x), x[1]) for x in data if x[1] < -30]
+    toplot = [(y, x) for (y, x) in toplot if -0.14*x - 5 > y]
     Ns, sigs = zip(*toplot)
     plt.plot(sigs, Ns, 'bx')
 
