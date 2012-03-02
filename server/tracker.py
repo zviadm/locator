@@ -202,7 +202,7 @@ def get_distances_from_readings(router_readings):
     toret = []
     for r, l in router_readings:
         corrected_level = (l+(CHANNEL_CORRECTION if r in POWERFUL_ROUTERS else 0.0))
-        print r, corrected_level
+        # print r, corrected_level
         if corrected_level < -80.0:
             continue
         toret.append((ROUTER_POS[r], get_distance_from_level(corrected_level)))
