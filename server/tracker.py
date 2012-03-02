@@ -39,7 +39,7 @@ MIN_DISTANCE_STD = 0.2
 INTERP_STD_OFFSET = 1.0
 MAX_PARTICLES = 400
 
-RUNNING_AVERAGE_LENGTH = 5
+RUNNING_AVERAGE_LENGTH = 3
 
 # physical constants for determining path loss (wikipedia)
 WAVELENGTH = 0.125
@@ -406,6 +406,22 @@ def get_router_levels(list_scan_results):
         router_levels[router] = float(sum(router_levels[router])) / len(router_levels[router])
     return router_levels
 
+UPDATE_ALPHA = 0.3
+def update_scan_results(new_scan_results, device_id):
+    toret = {}
+    for scan_result in new_scan_results:
+        bssid, level = scan_result["BSSID"], scan_result["level"]
+        if bssid in BSSID_TO_ROUTER:
+            router = BSSID_TO_ROUTER[bassid]
+            if not router in device_scan_results[device_id]:
+                device_scan_results[device_id][router] = level
+            else:
+                device_scan_results[device_id][router] = device_scan_results[device_id][router]*(1-UPDATE_ALPHA) + level * (UPDATE_ALPHA)
+
+    for routers in device_scan_results[device_id]:
+        toret[router] = device_scan_results[device_id][router]
+    return toret
+
 def track_location(device_id, timestamp, router_levels=None, scan_results=None):
     global device_samples
     global device_locks
@@ -416,12 +432,17 @@ def track_location(device_id, timestamp, router_levels=None, scan_results=None):
                 device_locks[device_id] = threading.Lock()
 
     with device_locks[device_id]:
+        # if scan_results:
+        #     if not device_id in device_scan_results:
+        #         device_scan_results[device_id] = []
+        #     device_scan_results[device_id].append((timestamp, scan_results))
+        #     device_scan_results[device_id] = device_scan_results[device_id][-RUNNING_AVERAGE_LENGTH:]
+        #     router_levels = get_router_levels(device_scan_results[device_id])
+
         if scan_results:
             if not device_id in device_scan_results:
-                device_scan_results[device_id] = []
-            device_scan_results[device_id].append((timestamp, scan_results))
-            device_scan_results[device_id] = device_scan_results[device_id][-RUNNING_AVERAGE_LENGTH:]
-            router_levels = get_router_levels(device_scan_results[device_id])
+                device_scan_results[device_id] = scan_results
+            update_scan_results(scan_results, device_id)
 
         readings = sorted(router_levels.iteritems(), key=itemgetter(1), reverse=True)
         router_ratios = get_router_distance_ratios(readings)
