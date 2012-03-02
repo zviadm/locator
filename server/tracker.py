@@ -418,7 +418,7 @@ def update_scan_results(new_scan_results, device_id):
             else:
                 device_scan_results[device_id][router] = device_scan_results[device_id][router]*(1-UPDATE_ALPHA) + float(level) * (UPDATE_ALPHA)
 
-    for routers in device_scan_results[device_id]:
+    for router in device_scan_results[device_id]:
         toret[router] = device_scan_results[device_id][router]
     return toret
 
