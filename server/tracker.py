@@ -412,7 +412,7 @@ def update_scan_results(new_scan_results, device_id):
     for scan_result in new_scan_results:
         bssid, level = scan_result["BSSID"], scan_result["level"]
         if bssid in BSSID_TO_ROUTER:
-            router = BSSID_TO_ROUTER[bassid]
+            router = BSSID_TO_ROUTER[bssid]
             if not router in device_scan_results[device_id]:
                 device_scan_results[device_id][router] = level
             else:
