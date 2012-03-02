@@ -20,13 +20,8 @@ from numpy import log, exp, random, array, mean
 from scipy import stats
 
 from tracker_info import update_map_info
+
 # map boundaries to use
-# XMIN = 800
-# XMAX = 1500
-# XSTEP = 25
-# YMIN = 100
-# YMAX = 1000
-# YSTEP = 25
 XMIN = 250
 XMAX = 5500
 XSTEP = 250
@@ -41,18 +36,16 @@ MOTION_STDEV = 25
 COMBO_ALPHA = 2
 MIN_RATIO_STD = 0.2
 MIN_DISTANCE_STD = 0.5
-
 MAX_PARTICLES = 200
 
 # physical constants for determining path loss (wikipedia)
 WAVELENGTH = 0.125
-N = 2.1
+N_COEFFS = [-0.07192023, -2.40415772]
 
 # map constants
-PIXELS_PER_METER = 40.0
-MAP_NAME = '../map/part4.png'
-IMG = mpimg.imread(MAP_NAME)
-
+ROUTER_HEIGHT = 2.1
+PIXELS_PER_METER = 22.0
+PIXELS_PER_METER_SQ = PIXELS_PER_METER**2
 ROUTER_POS = {
         # Part 4
         "AP-4-01" : (5035, 543),
@@ -90,6 +83,9 @@ ROUTER_POS = {
         # "AP-1-08" : (2585, 1109),
         }
 
+def lin_eval(coeffs, x):
+    a, b = coeffs
+    return a * x + b
 
 def get_router_distance_ratios(router_readings):
     NUM_BEST = len(router_readings)
@@ -100,21 +96,16 @@ def get_router_distance_ratios(router_readings):
         r1, l1 = router_readings[i]
         r2, l2 = router_readings[j]
 
+        avgN = 0.5*(lin_eval(N_COEFFS, l1) + lin_eval(N_COEFFS, l2))
         if l1 > l2:
-            toret.append((ROUTER_POS[r1], ROUTER_POS[r2], 10 ** ((l2 - l1)/(10*N))))
+            toret.append((ROUTER_POS[r1], ROUTER_POS[r2], 10 ** ((l2 - l1)/(10*avgN))))
         else:
-            toret.append((ROUTER_POS[r2], ROUTER_POS[r1], 10 ** ((l1 - l2)/(10*N))))
+            toret.append((ROUTER_POS[r2], ROUTER_POS[r1], 10 ** ((l1 - l2)/(10*avgN))))
     return toret
 
-def lin_eval(coeffs, x):
-    a, b = coeffs
-    return a * x + b
 
 def get_distance_from_level(level):
-    # n = 2.1
-    n = lin_eval([-0.07192023, -2.40415772], level)
-    # n = peval([  6.66666667e-05,  -1.06666667e-02,   1.62000000e+00], level)
-    # n = peval([  1.16666667e-03,   8.83333333e-02,   3.60000000e+00], level)
+    n = lin_eval(N_COEFFS, level)
 
     # from wikipedia
     level = -level
@@ -122,8 +113,8 @@ def get_distance_from_level(level):
     C = 20.0 * math.log(4.0 * math.pi / WAVELENGTH, 10)
     r_in_meters = 10 ** ((level - C) / (10.0 * n))
 
-    r_in_meters = max(2.5, r_in_meters)
-    dist_in_meters = math.sqrt(r_in_meters ** 2 - 2.5 ** 2)
+    r_in_meters = max(ROUTER_HEIGHT, r_in_meters)
+    dist_in_meters = math.sqrt(r_in_meters ** 2 - ROUTER_HEIGHT ** 2)
     return dist_in_meters
 
 def get_distances_from_readings(router_readings):
@@ -139,7 +130,7 @@ def distance_observation_probability(router_distances, xy):
     x, y = xy
 
     for (x1, y1), distance in router_distances:
-        dist = math.sqrt((x - x1)**2/1600.0 + (y - y1)**2 / 1600.0)
+        dist = math.sqrt((x - x1)**2/PIXELS_PER_METER_SQ + (y - y1)**2 / PIXELS_PER_METER_SQ)
         ll += max(LOG_MIN_PROB, loglikelihood((distance - dist) / max(MIN_DISTANCE_STD, distance/4.0)))
 
         # ll += log(max(exp(LOG_MIN_PROB), stats.norm(distance, distance/4.0).pdf(dist)))
@@ -148,19 +139,18 @@ def distance_observation_probability(router_distances, xy):
     # print
     return ll
 
-
 def ratio_observation_probability(router_ratios, xy):
     ll = 0.0
     x, y = xy
     for (x1, y1), (x2, y2), ratio in router_ratios:
 
-        new_ratio = math.sqrt(((x - x1)**2/1600.0 + (y - y1) ** 2/1600.0 + 2.5**2)/((x - x2)**2/1600.0 + (y - y2) ** 2/1600.0 + 2.5**2))
+        new_ratio = math.sqrt(((x - x1)**2/PIXELS_PER_METER_SQ + (y - y1) ** 2/PIXELS_PER_METER_SQ + ROUTER_HEIGHT**2)/((x - x2)**2/PIXELS_PER_METER_SQ + (y - y2) ** 2/PIXELS_PER_METER_SQ + ROUTER_HEIGHT**2))
         if new_ratio > 1.4:
             ll += LOG_MIN_PROB
             continue
 
-        # dist1 = math.sqrt((x - x1)**2/1600.0 + (y - y1) ** 2/1600.0 + 2.5**2)
-        # dist2 = math.sqrt((x - x2)**2/1600.0 + (y - y2) ** 2/1600.0 + 2.5**2)
+        # dist1 = math.sqrt((x - x1)**2/PIXELS_PER_METER_SQ + (y - y1) ** 2/PIXELS_PER_METER_SQ + ROUTER_HEIGHT**2)
+        # dist2 = math.sqrt((x - x2)**2/PIXELS_PER_METER_SQ + (y - y2) ** 2/PIXELS_PER_METER_SQ + ROUTER_HEIGHT**2)
         # if (dist1/dist2) > 1.4:
         #     ll += LOG_MIN_PROB
         #     continue
@@ -208,21 +198,21 @@ def draw_contour(samples):
     Cs = plt.contour(range(XMIN, XMAX, XSTEP), range(YMIN, YMAX, YSTEP), Zs)
     cbar = plt.colorbar(Cs)
 
-def draw_image(samples):
-    plt.cla()
-    imgplot = plt.imshow(IMG)
+# def draw_image(samples):
+#     plt.cla()
+#     imgplot = plt.imshow(IMG)
 
-    xs, ys = zip(*zip(*samples)[1])
-    plt.plot(xs, ys, 'bo', markersize=5)
+#     xs, ys = zip(*zip(*samples)[1])
+#     plt.plot(xs, ys, 'bo', markersize=5)
 
-    for name, (x, y) in ROUTER_POS.iteritems():
-        plt.text(x, y, name[-2:], color='red')
+#     for name, (x, y) in ROUTER_POS.iteritems():
+#         plt.text(x, y, name[-2:], color='red')
 
-    logging.info("about to write image")
-    last_image = cStringIO.StringIO()
-    plt.axis([XMIN, XMAX, YMAX, YMIN])
-    plt.savefig(last_image, bbox_inches='tight', dpi=75)
-    return last_image.getvalue()
+#     logging.info("about to write image")
+#     last_image = cStringIO.StringIO()
+#     plt.axis([XMIN, XMAX, YMAX, YMIN])
+#     plt.savefig(last_image, bbox_inches='tight', dpi=75)
+#     return last_image.getvalue()
 
 device_samples = [
         defaultdict(lambda: [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)]),
