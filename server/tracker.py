@@ -280,7 +280,7 @@ def track_location(device_id, timestamp, router_levels):
             "info" : \
                 "readings      : " + " : ".join(("(%s, %6d)" % x) for x in readings) + "\n" + \
                 "router dists  : " + " : ".join(("(%s, %6.3f)" % x) for x in router_distances) + "\n" + \
-                "device_stats  : " + str("(%s, %s)" % device_stats[device_id + "_1"].location) + "\n" + \
+                "device_stats  : " + str("(%s, %s)" % device_stats[device_id + "_1"]["location"]) + "\n" + \
                 "",
             "device_stats" : device_stats,
             "images" : image_data,
