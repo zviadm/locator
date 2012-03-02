@@ -34,6 +34,9 @@
                         if (xmlhttp.status == 200) {
                             var ret = JSON.parse(xmlhttp.responseText);
                             debug_info = ret["debug_info"];
+                            $("#infotext").empty();
+                            $("#infotext").append('<pre>' + debug_info + '</pre>');
+
                             for (var device in ret["devices"]) {
                                 var device_ret = ret["devices"][device];
                                 var device = device.replace(/\:/g, "");
@@ -120,8 +123,6 @@
 
                 $("#infotext").css('left', pox_x);
                 $("#infotext").css('top', pox_y);
-                $("#infotext").empty();
-                $("#infotext").append('<pre>' + debug_info + '</pre>');
             }
 
             $(document).ready(function() {
