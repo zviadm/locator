@@ -462,7 +462,7 @@ def track_location(device_id, timestamp, router_levels=None, scan_results=None):
 
 
         # reset device data if it hasnt appeared for a while
-        if not device_id in device_last_ping[device_id]:
+        if not device_id in device_last_ping:
             device_last_ping[device_id] = time.time()
         else:
             if device_last_ping[device_id] <= time.time() - 60.0:
