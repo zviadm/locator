@@ -16,7 +16,7 @@ matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
-from numpy import log, exp, random
+from numpy import log, exp, random, array, mean
 from scipy import stats
 
 from tracker_info import update_map_info
