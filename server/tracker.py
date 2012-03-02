@@ -239,7 +239,7 @@ def get_mean_and_variance(samples):
 
     mx = mean(xs)
     my = mean(ys)
-    return (mx, my), (math.sqrt(mean((xs-mx).dot(xs-mx))), math.sqrt(mean((ys-my).dot(ys-my))))
+    return (mx, my), (50, 50) #(math.sqrt(mean((xs-mx).dot(xs-mx))), math.sqrt(mean((ys-my).dot(ys-my))))
 
 def track_location(device_id, timestamp, router_levels):
     global device_samples
@@ -274,7 +274,7 @@ def track_location(device_id, timestamp, router_levels):
             #image_data.append(draw_image(device_samples[i][device_id]))
 
             mean_xy, var_xy = get_mean_and_variance(device_samples[i][device_id])
-            device_stats[device_id + "_" + i] = {
+            device_stats[device_id + "_" + str(i)] = {
                     "location" : mean_xy,
                     "variance" : var_xy,
                     "color"    : ["blue", "red", "yellow"][i],
