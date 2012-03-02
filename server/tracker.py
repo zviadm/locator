@@ -36,7 +36,7 @@ MOTION_STDEV = 25
 COMBO_ALPHA = 2
 MIN_RATIO_STD = 0.2
 MIN_DISTANCE_STD = 0.5
-MAX_PARTICLES = 200
+MAX_PARTICLES = 400
 
 # physical constants for determining path loss (wikipedia)
 WAVELENGTH = 0.125
@@ -265,10 +265,10 @@ def track_location(device_id, timestamp, router_levels):
             reweight(device_samples[i][device_id], model)
             #draw_contour(device_samples[device_id])
             device_samples[i][device_id] = resample(device_samples[i][device_id])
-            device_samples[i][device_id] = motion(device_samples[i][device_id])
-            #image_data.append(draw_image(device_samples[i][device_id]))
-
             mean_xy, var_xy = get_mean_and_variance(device_samples[i][device_id])
+            #image_data.append(draw_image(device_samples[i][device_id]))
+            device_samples[i][device_id] = motion(device_samples[i][device_id])
+
             device_stats[device_id + "_" + str(i)] = {
                     "location" : mean_xy,
                     "variance" : var_xy,

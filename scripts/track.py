@@ -53,13 +53,21 @@ def get_normalized_readings(fname):
                 readings[BSSID_TO_ROUTER[mac]] = max(readings[BSSID_TO_ROUTER[mac]], float(signal))
     return readings
 
+def get_raw_readings(fname):
+    readings = defaultdict(lambda: -100)
+    with open(fname) as f:
+        r = csv.reader(f)
+        for record_id, name, ts, ssid, m, signal in r:
+            mac = normalize_mac(m)
+            readings[mac] = max(readings[mac], float(signal))
+    return readings
 
 
 
 fname = '../newdata/standing_drew2.csv'
 if len(sys.argv) > 1:
     fname = sys.argv[1]
-readings = get_normalized_readings(fname)
+readings = get_raw_readings(fname)
 
 NUM_BEST = len(readings)
 
@@ -106,29 +114,29 @@ samples = [
 
 
 
-ratio_model = partial(ratio_observation_probability, router_ratios=get_router_distance_ratios(best))
+# ratio_model = partial(ratio_observation_probability, router_ratios=get_router_distance_ratios(best))
 
-best = sorted(readings.iteritems(), key=itemgetter(1), reverse=True)[:NUM_BEST]
+# best = sorted(readings.iteritems(), key=itemgetter(1), reverse=True)[:NUM_BEST]
 
 print "readings: "
 print "\n".join(str(x) for x in sorted(best))
 print
 
-print "distances: "
-print "\n".join(str(x) for x in sorted(get_distances_from_readings(best)))
-print
+# print "distances: "
+# print "\n".join(str(x) for x in sorted(get_distances_from_readings(best)))
+# print
 
-print "ratios: "
-print "\n".join(str(x) for x in sorted(get_router_distance_ratios(best)))
-print
+# print "ratios: "
+# print "\n".join(str(x) for x in sorted(get_router_distance_ratios(best)))
+# print
 
-distance_model = partial(distance_observation_probability, router_distances=get_distances_from_readings(best))
+# distance_model = partial(distance_observation_probability, router_distances=get_distances_from_readings(best))
 
 
-def combo_model(xy):
-    # print exp(ratio_model(xy=xy)), 10000*exp(distance_model(xy=xy))
-    # print ratio_model(xy=xy), distance_model(xy=xy)
-    return ratio_model(xy=xy) + COMBO_ALPHA*distance_model(xy=xy)
+# def combo_model(xy):
+#     # print exp(ratio_model(xy=xy)), 10000*exp(distance_model(xy=xy))
+#     # print ratio_model(xy=xy), distance_model(xy=xy)
+#     return ratio_model(xy=xy) + COMBO_ALPHA*distance_model(xy=xy)
 
 
 TRAINING_DATA = [
@@ -156,19 +164,11 @@ for training_fname, label, location in TRAINING_DATA:
       reader = csv.reader(f)
       for recording_id, loc_name, ts, ssid, device_id, strength in reader:
         if True or 'Dropbox' in ssid:
-          data[normalize_mac(device_id)].append(float(strength))
-    NSAMPLES=10
-    model_data[location] = dict((key, (mean(val), max(0.2, std(val)))) for key, val in data.iteritems() if len(val) == NSAMPLES)
+            data[normalize_mac(device_id)].append(float(strength))
+    # NSAMPLES=10
+    model_data[location] = dict((key, (mean(val), max(0.2, std(val)))) for key, val in data.iteritems())
 
 
-def get_raw_readings(fname):
-    readings = defaultdict(lambda: -90)
-    with open(fname) as f:
-        r = csv.reader(f)
-        for ssid, m, signal in r:
-            mac = normalize_mac(m)
-            readings[mac] = max(readings[mac], float(signal))
-    return readings
 
 
 def distancesq(xy1, xy2):
@@ -177,7 +177,10 @@ def distancesq(xy1, xy2):
     return (x1-x2)**2 + (y1-y2)**2
 
 def interp_model(router_readings, xy):
-    (dist1sq, loc1, l1), (dist2sq, loc2, l2) = sorted((distancesq(xy, location), device_dict, location) for location, device_dict in model_data.iteritems())[:2]    
+    (dist1sq, loc1, l1), (dist2sq, loc2, l2) = sorted((distancesq(xy, location), device_dict, location) for location, device_dict in model_data.iteritems())[:2]
+
+    # print "closest locs: ", dist1sq, l1
+    # print "closest locs: ", dist2sq, l2
 
     dist1 = math.sqrt(dist1sq)
     dist2 = math.sqrt(dist2sq)
@@ -188,33 +191,42 @@ def interp_model(router_readings, xy):
     # couldnt = 0
     for device, signal in router_readings.iteritems():
         if device in loc1 and device in loc2:
-            mu = loc1[device][0] * alpha + loc2[device][0] * (1-alpha)
-            sigma = loc1[device][1] * alpha + loc2[device][1] * (1-alpha)
+            p1 = loglikelihood((signal - loc1[device][0])/(loc1[device][1]))
+            p2 = loglikelihood((signal - loc2[device][0])/(loc2[device][1]))
+            ll += max(LOG_MIN_PROB, alpha*p1 + (1-alpha)*p2)
+            continue
+            # mu = loc1[device][0] * alpha + loc2[device][0] * (1-alpha)
+            # sigma = loc1[device][1] * alpha + loc2[device][1] * (1-alpha)
+            # ll += max(LOG_MIN_PROB, loglikelihood((signal - mu) / sigma))
+            # continue
         else:
             # couldnt += 1
+            # ll += LOG_MIN_PROB
             continue
-        ll += max(LOG_MIN_PROB, loglikelihood((signal - mu) / sigma))
+        
     # print "%d / %d" % (couldnt, len(router_readings))
     # print ll
     return ll
 
 
-observation_model = combo_model
-if len(sys.argv) > 2:
-    if sys.argv[2] == 'distance':
-        print 'distance model'
-        observation_model = distance_model
-    if sys.argv[2] == 'ratio':
-        print 'ratio model'
-        observation_model = ratio_model
-    if sys.argv[2] == 'interp':
-        print 'interp model'
-        observation_model = interp_model
+# observation_model = combo_model
+# if len(sys.argv) > 2:
+#     if sys.argv[2] == 'distance':
+#         print 'distance model'
+#         observation_model = distance_model
+#     if sys.argv[2] == 'ratio':
+#         print 'ratio model'
+#         observation_model = ratio_model
+#     if sys.argv[2] == 'interp':
+#         print 'interp model'
+#         observation_model = interp_model
 
 
 
 observation_model = partial(interp_model, router_readings=get_raw_readings(fname))
 
+# observation_model(xy=(1000, 300))
+# sys.exit()
 
 # observation_model = partial(ratio_observation_probability, router_ratios=[
 #     ("AP-4-01", "AP-4-02", 1.0), 
