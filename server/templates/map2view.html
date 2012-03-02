@@ -35,7 +35,7 @@
                             var ret = JSON.parse(xmlhttp.responseText);
                             debug_info = ret["debug_info"];
                             $("#infotext").empty();
-                            $("#infotext").append('<pre>' + debug_info + '</pre>');
+                            $("#infotext").append('<pre style="color:green;background:black;font-weight:bold">' + debug_info + '</pre>');
 
                             for (var device in ret["devices"]) {
                                 var device_ret = ret["devices"][device];
