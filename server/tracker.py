@@ -433,7 +433,7 @@ def update_scan_results(new_scan_results, device_id):
                 device_scan_results[device_id][router] = device_scan_results[device_id][router]*(1-UPDATE_ALPHA) + float(level) * (UPDATE_ALPHA)
 
             level_to_ret = device_scan_results[device_id][router]
-            corrected_level = (level_to_ret+(CHANNEL_CORRECTION if r in POWERFUL_ROUTERS else 0.0))
+            corrected_level = (level_to_ret+(CHANNEL_CORRECTION if router in POWERFUL_ROUTERS else 0.0))
             # print r, corrected_level
             if corrected_level < -80.0:
                 continue
