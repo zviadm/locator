@@ -65,7 +65,7 @@
                                     current_locations[device] = [loc_x, loc_y];
                                     current_steps[device] = 0;
                                 } else {
-                                    current_steps[device] = LOCATION_UPDATE_RATE / ANIMATION_UPDATE_RATE;
+                                    current_steps[device] = LOCATION_UPDATE_RATE / ANIMATION_UPDATE_RATE + 4;
                                 }
 
                                 device_stats[device] = device_ret;
@@ -97,11 +97,11 @@
                         var width = 90;
                         var height = 120;
                     } else {
-                        var width = Math.floor(device_stat.variance[0]);
-                        var height = Math.floor(device_stat.variance[1]);
+                        var width = Math.max(Math.floor(device_stat.variance[0]) * 2.0 * SCALE, 20.0 * SCALE);
+                        var height = Math.max(Math.floor(device_stat.variance[1]) * 2.0 * SCALE, 20.0 * SCALE);
                     }
-                    var loc_x = Math.floor(current_locations[device][0] * SCALE) + (width / 2.0);
-                    var loc_y = Math.floor(current_locations[device][1] * SCALE) + (height / 2.0);
+                    var loc_x = Math.floor(current_locations[device][0] * SCALE) - (width / 2.0);
+                    var loc_y = Math.floor(current_locations[device][1] * SCALE) - (height / 2.0);
 
                     if (device in DEVICE_TO_NAME) {
                         // when doing image all what matters is the x,y

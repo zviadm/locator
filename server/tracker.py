@@ -16,7 +16,7 @@ matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
-from numpy import log, exp, random, array, mean
+from numpy import log, exp, random, array, mean, dot, std
 from scipy import stats
 
 from tracker_info import update_map_info
@@ -35,8 +35,8 @@ MOTION_STDEV = 25
 
 COMBO_ALPHA = 2
 MIN_RATIO_STD = 0.2
-MIN_DISTANCE_STD = 0.5
-MAX_PARTICLES = 200
+MIN_DISTANCE_STD = 0.2
+MAX_PARTICLES = 400
 
 # physical constants for determining path loss (wikipedia)
 WAVELENGTH = 0.125
@@ -165,6 +165,84 @@ def ratio_observation_probability(router_ratios, xy):
         # ll += log(max(exp(LOG_MIN_PROB), stats.norm(ratio, ratio/2.0).pdf(dist1 / dist2)))
     return ll
 
+def normalize_mac(address):
+    return ":".join("0"+x if len(x) == 1 else x for x in address.split(":"))
+
+TRAINING_DATA = [
+    ('../locdata/zviad1.csv', 'zviad1', (5295, 196)), #z1
+    ('../locdata/zviad2.csv', 'zviad2', (5295, 353)), #z2
+    ('../locdata/zviad3.csv', 'zviad3', (5285, 554)), #z3
+    ('../locdata/zviad4.csv', 'zviad4', (5029, 544)), #z4
+    ('../locdata/zviad5.csv', 'zviad5', (5029, 396)), #z5
+    ('../locdata/zviad6.csv', 'zviad6', (5032, 237)), #z6
+    ('../locdata/zviad7.csv', 'zviad7', (5478, 152)), #z7
+    ]
+BSSID_TO_ROUTER = {
+        "00:0b:86:74:96:80" : "AP-4-01",
+        "00:0b:86:74:96:81" : "AP-4-01",
+
+        "00:0b:86:74:97:60" : "AP-4-02",
+        "00:0b:86:74:97:61" : "AP-4-02",
+
+        "00:0b:86:74:9a:80" : "AP-4-03",
+        "00:0b:86:74:9a:81" : "AP-4-03",
+
+        "00:0b:86:74:9a:90" : "AP-4-04",
+        "00:0b:86:74:9a:91" : "AP-4-04",
+
+        "00:0b:86:74:97:90" : "AP-4-05",
+        "00:0b:86:74:97:91" : "AP-4-05",
+        }
+
+# model_data: location: {normed_device_id: (mean, variance)}
+model_data = {}
+for training_fname, label, location in TRAINING_DATA:
+    data = defaultdict(list)
+    with open(training_fname, 'rb') as f:
+      reader = csv.reader(f)
+      for recording_id, loc_name, ts, ssid, device_id, strength in reader:
+        if True or 'Dropbox' in ssid:
+            m = normalize_mac(device_id)
+            if m in BSSID_TO_ROUTER:
+                data[BSSID_TO_ROUTER[m]].append(float(strength))
+    # NSAMPLES=10
+    model_data[location] = dict((key, (mean(val), max(0.2, std(val)))) for key, val in data.iteritems())
+
+
+def distancesq(xy1, xy2):
+    x1, y1 = xy1
+    x2, y2 = xy2
+    return (x1-x2)**2 + (y1-y2)**2
+
+def interp_observation_probability(router_readings, xy):
+    (dist1sq, loc1, l1), (dist2sq, loc2, l2) = sorted((distancesq(xy, location), device_dict, location) for location, device_dict in model_data.iteritems())[:2]
+
+    # print "closest locs: ", dist1sq, l1
+    # print "closest locs: ", dist2sq, l2
+
+    dist1 = math.sqrt(dist1sq)
+    dist2 = math.sqrt(dist2sq)
+
+    alpha = dist2/(dist1+dist2)
+
+    ll = 0.0
+    # couldnt = 0
+    for device, signal in router_readings.iteritems():
+        if device in loc1 and device in loc2:
+            p1 = loglikelihood((signal - loc1[device][0])/(loc1[device][1]))
+            p2 = loglikelihood((signal - loc2[device][0])/(loc2[device][1]))
+            ll += max(LOG_MIN_PROB, alpha*p1 + (1-alpha)*p2)
+            continue
+            # mu = loc1[device][0] * alpha + loc2[device][0] * (1-alpha)
+            # sigma = loc1[device][1] * alpha + loc2[device][1] * (1-alpha)
+            # ll += max(LOG_MIN_PROB, loglikelihood((signal - mu) / sigma))
+            # continue
+        else:
+            # couldnt += 1
+            # ll += LOG_MIN_PROB
+            continue
+    return ll
+
 
 # obs reweight
 def reweight(samples, observation_model):
@@ -223,6 +301,7 @@ device_samples = [
         defaultdict(lambda: [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)]),
         defaultdict(lambda: [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)]),
         defaultdict(lambda: [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)]),
+        defaultdict(lambda: [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)]),
         ]
 device_locks_lock = threading.Lock()
 device_locks = {}
@@ -234,7 +313,8 @@ def get_mean_and_variance(samples):
 
     mx = mean(xs)
     my = mean(ys)
-    return (mx, my), (50, 50) #(math.sqrt(mean((xs-mx).dot(xs-mx))), math.sqrt(mean((ys-my).dot(ys-my))))
+    return (mx, my), (math.sqrt(dot((xs-mx), (xs-mx)) / len(xs)), math.sqrt(dot((ys-my), (ys-my)) / len(ys)))
+    #return (mx, my), (50, 50) #(math.sqrt(mean((xs-mx).dot(xs-mx))), math.sqrt(mean((ys-my).dot(ys-my))))
 
 def track_location(device_id, timestamp, router_levels):
     global device_samples
@@ -252,12 +332,13 @@ def track_location(device_id, timestamp, router_levels):
 
         ratio_model = partial(ratio_observation_probability, router_ratios=router_ratios)
         distance_model = partial(distance_observation_probability, router_distances=router_distances)
+        interp_model = partial(interp_observation_probability, router_readings=router_levels)
 
         def combo_model(xy):
             # logging.info("%.15f, %.15f" % (exp(ratio_model(xy=xy)), COMBO_ALPHA*exp(distance_model(xy=xy))))
             return ratio_model(xy=xy) + COMBO_ALPHA*distance_model(xy=xy)
 
-        observation_models = [combo_model, distance_model, ratio_model]
+        observation_models = [combo_model, distance_model, ratio_model, interp_model]
 
         image_data = []
         device_stats = {}
@@ -265,14 +346,14 @@ def track_location(device_id, timestamp, router_levels):
             reweight(device_samples[i][device_id], model)
             #draw_contour(device_samples[device_id])
             device_samples[i][device_id] = resample(device_samples[i][device_id])
-            device_samples[i][device_id] = motion(device_samples[i][device_id])
-            #image_data.append(draw_image(device_samples[i][device_id]))
-
             mean_xy, var_xy = get_mean_and_variance(device_samples[i][device_id])
+            #image_data.append(draw_image(device_samples[i][device_id]))
+            device_samples[i][device_id] = motion(device_samples[i][device_id])
+
             device_stats[device_id + "_" + str(i)] = {
                     "location" : mean_xy,
                     "variance" : var_xy,
-                    "color"    : ["blue", "red", "yellow"][i],
+                    "color"    : ["blue", "red", "yellow", "green"][i],
                     }
 
         # update map information
@@ -280,7 +361,7 @@ def track_location(device_id, timestamp, router_levels):
             "info" : \
                 "readings      : " + " : ".join(("(%s, %6d)" % x) for x in readings) + "\n" + \
                 "router dists  : " + " : ".join(("(%s, %6.3f)" % x) for x in router_distances) + "\n" + \
-                "device_stats  : " + str("(%s, %s)" % device_stats[device_id + "_1"]["location"]) + "\n" + \
+                "device_stats  : " + str("(%s, %s), var(%s, %s)" % (device_stats[device_id + "_1"]["location"] + device_stats[device_id + "_1"]["variance"])) + "\n" + \
                 "",
             "device_stats" : device_stats,
             "images" : image_data,
