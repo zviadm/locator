@@ -393,6 +393,7 @@ device_samples = [
         defaultdict(lambda: [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)]),
         ]
 device_scan_results = {}
+device_last_ping = {}
 device_locks_lock = threading.Lock()
 device_locks = {}
 
@@ -458,6 +459,16 @@ def track_location(device_id, timestamp, router_levels=None, scan_results=None):
         #     device_scan_results[device_id].append((timestamp, scan_results))
         #     device_scan_results[device_id] = device_scan_results[device_id][-RUNNING_AVERAGE_LENGTH:]
         #     router_levels = get_router_levels(device_scan_results[device_id])
+
+
+        # reset device data if it hasnt appeared for a while
+        if not device_id in device_last_ping[device_id]:
+            device_last_ping[device_id] = time.time()
+        else:
+            if device_last_ping[device_id] <= time.time() - 60.0:
+                device_scan_results[device_id] = {}
+                device_samples[i][device_id] = [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)]
+            device_last_ping[device_id] = time.time()
 
         if scan_results:
             if not device_id in device_scan_results:
