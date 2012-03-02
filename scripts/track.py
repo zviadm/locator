@@ -47,7 +47,7 @@ def get_normalized_readings(fname):
     readings = defaultdict(lambda: -90)
     with open(fname) as f:
         r = csv.reader(f)
-        for ssid, m, signal in r:
+        for record_name, loc_name, ts, ssid, m, signal in r:
             mac = normalize_mac(m)
             if mac in BSSID_TO_ROUTER:
                 readings[BSSID_TO_ROUTER[mac]] = max(readings[BSSID_TO_ROUTER[mac]], float(signal))
@@ -139,7 +139,6 @@ print
 #     return ratio_model(xy=xy) + COMBO_ALPHA*distance_model(xy=xy)
 
 
-TRAINING_DATA = [
     # ('../newdata/bromancechamber1.csv', 'bromancechamber', (1160,  155)), # bromance
     # ('../newdata/breakuproom1.csv', 'breakuproom', (1280,  155)), # breakup
     # ('../newdata/arrears1.csv', 'arrears', (1400,  155)), # arrears
@@ -147,6 +146,8 @@ TRAINING_DATA = [
     # ('../newdata/client1.csv', 'client', (1400, 450)), # client
     # ('../newdata/drew1.csv', 'drew', (1400, 620)), # drew
     # ('../newdata/breakfastbar1.csv', 'breakfastbar', (1100, 570)), # breakfastbar
+
+TRAINING_DATA = [
     ('../locdata/zviad1.csv', 'zviad1', (1150, 320)), #z1
     ('../locdata/zviad2.csv', 'zviad2', (1150, 620)), #z2
     ('../locdata/zviad3.csv', 'zviad3', (1150, 980)), #z3
@@ -164,7 +165,9 @@ for training_fname, label, location in TRAINING_DATA:
       reader = csv.reader(f)
       for recording_id, loc_name, ts, ssid, device_id, strength in reader:
         if True or 'Dropbox' in ssid:
-            data[normalize_mac(device_id)].append(float(strength))
+            m = normalize_mac(device_id)
+            if m in BSSID_TO_ROUTER:
+                data[BSSID_TO_ROUTER[m]].append(float(strength))
     # NSAMPLES=10
     model_data[location] = dict((key, (mean(val), max(0.2, std(val)))) for key, val in data.iteritems())
 
@@ -208,6 +211,7 @@ def interp_model(router_readings, xy):
     # print ll
     return ll
 
+observation_model = partial(interp_model, router_readings=get_normalized_readings(fname))
 
 # observation_model = combo_model
 # if len(sys.argv) > 2:
@@ -223,7 +227,6 @@ def interp_model(router_readings, xy):
 
 
 
-observation_model = partial(interp_model, router_readings=get_raw_readings(fname))
 
 # observation_model(xy=(1000, 300))
 # sys.exit()
