@@ -276,7 +276,6 @@ def build_model(training_data=TRAINING_DATA):
     return model_data
 
 model_data = build_model()
-logging.info(model_data)
 
 def distancesq(xy1, xy2):
     x1, y1 = xy1
@@ -425,6 +424,9 @@ def track_location(device_id, timestamp, router_levels=None, scan_results=None):
 
         ratio_model = partial(ratio_observation_probability, router_ratios=router_ratios)
         distance_model = partial(distance_observation_probability, router_distances=router_distances)
+
+        logging.info(model_data)
+
         logging.info(scan_results)
         interp_model = partial(interp_observation_probability, router_readings=scan_results, model=model_data)
 
