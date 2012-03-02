@@ -13,6 +13,8 @@
             var SCALE = 1.0;
 
             var debug_info = "";
+            var last_pos_x = 0, last_pos_y = 0, dist_xy = 0;
+
             var device_stats = {};
             var current_locations = {};
             var current_steps = {}
@@ -113,12 +115,12 @@
                 }
             }
 
-            var last_pos_x = 0, last_pos_y = 0, dist_xy = 0;
-
             function point_it(event) {
                 var pos_x = event.offsetX?(event.offsetX):event.pageX-document.getElementById("map").offsetLeft;
                 var pos_y = event.offsetY?(event.offsetY):event.pageY-document.getElementById("map").offsetTop;
-                var dist_xy = Math.sqrt((pos_x - last_pos_x) * (pos_x - last_pos_x) - (pos_y - last_pos_y) * (pos_y - last_pos_y));
+                dist_xy = Math.sqrt((pos_x - last_pos_x) * (pos_x - last_pos_x) - (pos_y - last_pos_y) * (pos_y - last_pos_y)) / 22.0;
+                last_pos_x = pos_x;
+                last_pos_y = pos_y;
                 //document.getElementById("click_xy").value = pos_x + ", " + pos_y;
                 //document.getElementById("click_xy").style.left = pos_x + "px";
                 //document.getElementById("click_xy").style.top = pos_y + "px";
