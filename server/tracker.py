@@ -306,16 +306,15 @@ def interp_observation_probability(model, router_readings, xy):
             # p1 = loglikelihood((signal - loc1[device][0])/(loc1[device][1]))
             # p2 = loglikelihood((signal - loc2[device][0])/(loc2[device][1]))
             # ll += max(LOG_MIN_PROB, alpha*p1 + (1-alpha)*p2)
-            # continue
             mu = loc1[device][0] * alpha + loc2[device][0] * (1-alpha)
             sigma = loc1[device][1] * alpha + loc2[device][1] * (1-alpha)
-
-            if abs(signal - mu) / sigma > 3:
-                continue
             ll += max(LOG_MIN_PROB, loglikelihood((signal - mu) / sigma))
+        elif device in loc1:
+            ll += max(LOG_MIN_PROB, loglikelihood((signal - loc1[device][0]) / loc1[device][1]))
+        elif device in loc2:
+            ll += max(LOG_MIN_PROB, loglikelihood((signal - loc2[device][0]) / loc2[device][1]))
         else:
-            couldnt += 1
-            # ll += LOG_MIN_PROB
+            ll += LOG_MIN_PROB
     # logging.info("couldnt: (%d / %d)" % (couldnt, len(router_readings)))
     return ll
 
