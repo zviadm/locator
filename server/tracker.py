@@ -50,6 +50,9 @@ N_COEFFS = [-0.07363796, -2.52218124]
 ROUTER_HEIGHT = 2.1
 PIXELS_PER_METER = 22.0
 PIXELS_PER_METER_SQ = PIXELS_PER_METER**2
+POWERFUL_ROUTERS = set(['AP-1-07', 'AP-4-02'])
+CHANNEL_CORRECTION = 1.8
+
 ROUTER_POS = {
         # Part 1
         "AP-1-01" : (447, 254),
@@ -83,7 +86,7 @@ ROUTER_POS = {
 
         # Part 4
         "AP-4-01" : (4980, 600),
-        "AP-4-02" : (4980, 200),
+        "AP-4-02" : (4980, 200), 
         "AP-4-03" : (5041, 409),
         "AP-4-04" : (5325, 159),
         "AP-4-05" : (5265, 537),
@@ -196,7 +199,7 @@ def get_distance_from_level(level):
     return dist_in_meters
 
 def get_distances_from_readings(router_readings):
-    return [(ROUTER_POS[r], get_distance_from_level(l)) for r, l in router_readings if l > -80]
+    return [(ROUTER_POS[r], get_distance_from_level(l)*(CHANNEL_CORRECTION if r in POWERFUL_ROUTERS else 1.0)) for r, l in router_readings if l > -80]
 
 
 NORM_Z = log(0.39894)
