@@ -467,7 +467,8 @@ def track_location(device_id, timestamp, router_levels=None, scan_results=None):
         else:
             if device_last_ping[device_id] <= time.time() - 60.0:
                 device_scan_results[device_id] = {}
-                device_samples[i][device_id] = [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)]
+                for i in xrange(2):
+                    device_samples[i][device_id] = [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)]
             device_last_ping[device_id] = time.time()
 
         if scan_results:
