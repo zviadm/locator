@@ -169,13 +169,13 @@ def normalize_mac(address):
     return ":".join("0"+x if len(x) == 1 else x for x in address.split(":"))
 
 TRAINING_DATA = [
-    ('../locdata/zviad1.csv', 'zviad1', (1150, 320)), #z1
-    ('../locdata/zviad2.csv', 'zviad2', (1150, 620)), #z2
-    ('../locdata/zviad3.csv', 'zviad3', (1150, 980)), #z3
-    ('../locdata/zviad4.csv', 'zviad4', (680,  950)), #z4
-    ('../locdata/zviad5.csv', 'zviad5', (680,  680)), #z5
-    ('../locdata/zviad6.csv', 'zviad6', (680,  400)), #z6
-    ('../locdata/zviad7.csv', 'zviad7', (1480, 240)), #z7
+    ('../locdata/zviad1.csv', 'zviad1', (5295, 196)), #z1
+    ('../locdata/zviad2.csv', 'zviad2', (5295, 353)), #z2
+    ('../locdata/zviad3.csv', 'zviad3', (5285, 554)), #z3
+    ('../locdata/zviad4.csv', 'zviad4', (5029, 544)), #z4
+    ('../locdata/zviad5.csv', 'zviad5', (5029, 396)), #z5
+    ('../locdata/zviad6.csv', 'zviad6', (5032, 237)), #z6
+    ('../locdata/zviad7.csv', 'zviad7', (5478, 152)), #z7
     ]
 BSSID_TO_ROUTER = {
         "00:0b:86:74:96:80" : "AP-4-01",
