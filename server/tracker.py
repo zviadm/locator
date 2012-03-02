@@ -199,8 +199,14 @@ def get_distance_from_level(level):
     return dist_in_meters
 
 def get_distances_from_readings(router_readings):
-    return [(ROUTER_POS[r], get_distance_from_level(l + (CHANNEL_CORRECTION if r in POWERFUL_ROUTERS else 0.0))) for r, l in router_readings if (l + (CHANNEL_CORRECTION if r in POWERFUL_ROUTERS else 0.0)) > -80]
-
+    toret = []
+    for r, l in router_readings:
+        corrected_level = (l+(CHANNEL_CORRECTION if r in POWERFUL_ROUTERS else 0.0))
+        print r, corrected_level
+        if corrected_level < -80.0:
+            continue
+        toret.append((ROUTER_POS[r], get_distance_from_level(corrected_level)))
+    return toret
 
 NORM_Z = log(0.39894)
 def loglikelihood(x):
