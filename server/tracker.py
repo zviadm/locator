@@ -36,6 +36,7 @@ MOTION_STDEV = 25
 COMBO_ALPHA = 2
 MIN_RATIO_STD = 0.2
 MIN_DISTANCE_STD = 0.2
+INTERP_STD_OFFSET = 1.0
 MAX_PARTICLES = 400
 
 RUNNING_AVERAGE_LENGTH = 2
@@ -274,7 +275,7 @@ def build_model(training_data=TRAINING_DATA):
                 # if m in BSSID_TO_ROUTER:
                 #     data[BSSID_TO_ROUTER[m]].append(float(strength))
         # NSAMPLES=10
-        model_data[location] = dict((key, (mean(val), max(0.2, std(val)))) for key, val in data.iteritems())
+        model_data[location] = dict((key, (mean(val), INTERP_STD_OFFSET+std(val))) for key, val in data.iteritems() if len(val) > 30 and mean(val) > -80)
     return model_data
 
 model_data = build_model()
@@ -308,12 +309,13 @@ def interp_observation_probability(model, router_readings, xy):
             # continue
             mu = loc1[device][0] * alpha + loc2[device][0] * (1-alpha)
             sigma = loc1[device][1] * alpha + loc2[device][1] * (1-alpha)
+
+            if abs(signal - mu) / sigma > 3:
+                continue
             ll += max(LOG_MIN_PROB, loglikelihood((signal - mu) / sigma))
-            continue
         else:
             couldnt += 1
             # ll += LOG_MIN_PROB
-            continue
     # logging.info("couldnt: (%d / %d)" % (couldnt, len(router_readings)))
     return ll
 
