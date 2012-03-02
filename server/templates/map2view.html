@@ -123,6 +123,9 @@
 
                 $("#infotext").css('left', pos_x + "px");
                 $("#infotext").css('top', pos_y + "px");
+                #("#infotext").empty();
+                $("#infotext").append('<pre style="color:green;background:black;font-weight:bold">' + pos_x ", " + pos_y + '</pre>');
+                $("#infotext").append('<pre style="color:green;background:black;font-weight:bold">' + debug_info + '</pre>');
             }
 
             $(document).ready(function() {
