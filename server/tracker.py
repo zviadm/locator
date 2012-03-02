@@ -86,7 +86,7 @@ ROUTER_POS = {
 
         # Part 4
         "AP-4-01" : (4980, 600),
-        "AP-4-02" : (4980, 200), 
+        "AP-4-02" : (4980, 200),
         "AP-4-03" : (5041, 409),
         "AP-4-04" : (5325, 159),
         "AP-4-05" : (5265, 537),
@@ -445,6 +445,7 @@ def track_location(device_id, timestamp, router_levels=None, scan_results=None):
     global device_samples
     global device_locks
 
+    device_id = device_id.lower()
     if not device_id in device_locks:
         with device_locks_lock:
             if not device_id in device_locks:
@@ -477,7 +478,7 @@ def track_location(device_id, timestamp, router_levels=None, scan_results=None):
             return ratio_model(xy=xy) + COMBO_ALPHA*distance_model(xy=xy)
 
         #observation_models = [combo_model, distance_model, ratio_model, interp_model]
-        observation_models = [interp_model, distance_model]
+        observation_models = [distance_model] #[interp_model, distance_model]
 
         image_data = []
         device_stats = {}
@@ -504,7 +505,7 @@ def track_location(device_id, timestamp, router_levels=None, scan_results=None):
                 "readings      : " + " : ".join(("(%s, %6.3f)" % x) for x in readings) + "\n" + \
                 "router dists  : " + " : ".join(("(%s, %6.3f)" % x) for x in router_distances) + "\n" + \
                 "device_stats  : " + str("(%s, %s), var(%s, %s)" % (device_stats[device_id + "_0"]["location"] + device_stats[device_id + "_0"]["variance"])) + "\n" + \
-                "device_stats  : " + str("(%s, %s), var(%s, %s)" % (device_stats[device_id + "_1"]["location"] + device_stats[device_id + "_1"]["variance"])) + "\n" + \
+                #"device_stats  : " + str("(%s, %s), var(%s, %s)" % (device_stats[device_id + "_1"]["location"] + device_stats[device_id + "_1"]["variance"])) + "\n" + \
                 "",
             "device_stats" : device_stats,
             "images" : image_data,
