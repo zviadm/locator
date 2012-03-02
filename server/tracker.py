@@ -331,8 +331,11 @@ def reweight(samples, observation_model):
         samples[i][0] = nw
         Z += nw
 
+    if Z == 0.0:
+        return
+
     for i in range(len(samples)):
-        samples[i][0] /= max(exp(LOG_MIN_PROB), Z)
+        samples[i][0] /= Z
 
 
 # resample
