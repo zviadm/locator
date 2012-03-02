@@ -39,7 +39,7 @@ MIN_DISTANCE_STD = 0.2
 INTERP_STD_OFFSET = 1.0
 MAX_PARTICLES = 400
 
-RUNNING_AVERAGE_LENGTH = 2
+RUNNING_AVERAGE_LENGTH = 5
 
 # physical constants for determining path loss (wikipedia)
 WAVELENGTH = 0.125
