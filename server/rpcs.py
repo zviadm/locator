@@ -13,7 +13,11 @@ def location_sample(device_id, location_id, timestamp, scan_results):
     return { "ret" : "ok" }
 
 def track_location(device_id, timestamp, router_levels):
-    tracker.track_location(device_id, timestamp, router_levels)
+    tracker.track_location(device_id, timestamp, router_levels=router_levels)
+    return { "ret" : "ok" }
+
+def track_location2(device_id, timestamp, scan_results):
+    tracker.track_location(device_id, timestamp, scan_results=scan_results)
     return { "ret" : "ok" }
 
 def get_locations():
