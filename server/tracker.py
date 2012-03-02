@@ -214,7 +214,7 @@ def distancesq(xy1, xy2):
     x2, y2 = xy2
     return (x1-x2)**2 + (y1-y2)**2
 
-def interp_model(router_readings, xy):
+def interp_observation_probability(router_readings, xy):
     (dist1sq, loc1, l1), (dist2sq, loc2, l2) = sorted((distancesq(xy, location), device_dict, location) for location, device_dict in model_data.iteritems())[:2]
 
     # print "closest locs: ", dist1sq, l1
@@ -301,6 +301,7 @@ device_samples = [
         defaultdict(lambda: [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)]),
         defaultdict(lambda: [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)]),
         defaultdict(lambda: [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)]),
+        defaultdict(lambda: [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)]),
         ]
 device_locks_lock = threading.Lock()
 device_locks = {}
@@ -331,6 +332,7 @@ def track_location(device_id, timestamp, router_levels):
 
         ratio_model = partial(ratio_observation_probability, router_ratios=router_ratios)
         distance_model = partial(distance_observation_probability, router_distances=router_distances)
+        interp_model = partial(interp_observation_probability, router_readings=router_levels)
 
         def combo_model(xy):
             # logging.info("%.15f, %.15f" % (exp(ratio_model(xy=xy)), COMBO_ALPHA*exp(distance_model(xy=xy))))

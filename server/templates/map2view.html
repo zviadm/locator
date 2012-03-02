@@ -97,8 +97,8 @@
                         var width = 90;
                         var height = 120;
                     } else {
-                        var width = Math.floor(device_stat.variance[0]) * SCALE;
-                        var height = Math.floor(device_stat.variance[1]) * SCALE;
+                        var width = Math.max(Math.floor(device_stat.variance[0]) * 2.0 * SCALE, 20.0 * SCALE);
+                        var height = Math.max(Math.floor(device_stat.variance[1]) * 2.0 * SCALE, 20.0 * SCALE);
                     }
                     var loc_x = Math.floor(current_locations[device][0] * SCALE) - (width / 2.0);
                     var loc_y = Math.floor(current_locations[device][1] * SCALE) - (height / 2.0);
