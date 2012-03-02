@@ -35,7 +35,7 @@ MOTION_STDEV = 25
 
 COMBO_ALPHA = 2
 MIN_RATIO_STD = 0.2
-MIN_DISTANCE_STD = 0.5
+MIN_DISTANCE_STD = 0.2
 MAX_PARTICLES = 400
 
 # physical constants for determining path loss (wikipedia)
