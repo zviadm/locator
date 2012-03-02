@@ -37,7 +37,7 @@
                             var ret = JSON.parse(xmlhttp.responseText);
                             debug_info = ret["debug_info"];
                             $("#infotext").empty();
-                            $("#infotext").append('<pre style="color:green;background:black;font-weight:bold">POS: ' + last_pos_x + ", " + last_pos_y + " - DIST: " + dist_xy + '</pre>');
+                            $("#infotext").append('<pre style="color:green;background:black;font-weight:bold">POS: (' + last_pos_x + ", " + last_pos_y + ") DIST: " + dist_xy + '</pre>');
                             $("#infotext").append('<pre style="color:green;background:black;font-weight:bold">' + debug_info + '</pre>');
 
                             for (var device in ret["devices"]) {
