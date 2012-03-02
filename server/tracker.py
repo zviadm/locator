@@ -41,7 +41,7 @@ MAX_PARTICLES = 200
 # physical constants for determining path loss (wikipedia)
 WAVELENGTH = 0.125
 # N_COEFFS = [-0.07192023, -2.40415772]
-N_COEFFS = [-0.07363796 -2.52218124]
+N_COEFFS = [-0.07363796, -2.52218124]
 
 # map constants
 ROUTER_HEIGHT = 2.1
