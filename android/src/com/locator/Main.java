@@ -5,7 +5,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.net.http.AndroidHttpClient;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
@@ -21,6 +20,7 @@ import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.protocol.HTTP;
@@ -47,6 +47,7 @@ public class Main extends Activity
 
     private EditText textNumOfSamples = null;
     private TextView textRouters = null;
+    private HttpClient httpClient = null;
 
     protected class TrackLocationTask extends AsyncTask<Map<String, Integer>, Void, Void> {
         private String deviceId;
@@ -58,7 +59,6 @@ public class Main extends Activity
         
         @Override
         protected Void doInBackground(Map<String, Integer>... listRouterLevels) {
-            HttpClient httpClient = AndroidHttpClient.newInstance("Locator 1.0/Android", getApplicationContext());
             HttpHost host = new HttpHost("locator.dropbox.com", 80);
             
             for (Map<String, Integer> routerLevels : listRouterLevels) {
@@ -135,6 +135,8 @@ public class Main extends Activity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
 
+        httpClient = new DefaultHttpClient();
+
         butSnapshot = findViewById(R.id.but_snapshot);
         butStartTracking = findViewById(R.id.but_start_tracking);
         butEndTracking = findViewById(R.id.but_end_tracking);
@@ -189,7 +191,7 @@ public class Main extends Activity
         });
 
     }
-    
+
     private JSONObject scanResultToJson(ScanResult scanResult) {
         JSONObject scanResultObj=new JSONObject();
         try {
@@ -211,7 +213,6 @@ public class Main extends Activity
             for (ScanResult scanResult : scanResults) {
                 if (BSSID_TO_ROUTER.containsKey(scanResult.BSSID)) {
                     String router = BSSID_TO_ROUTER.get(scanResult.BSSID);
-                    Log.d(TAG, "ROUTER CHANNEL: " + scanResult.frequency);
                     if (routerLevels.containsKey(router)) {
                         routerLevels.put(router, Math.max(scanResult.level, routerLevels.get(router)));
                     } else {
