@@ -139,6 +139,7 @@ public class Main extends Activity
                     for (ScanResult scanResult : scanResults) {
                         scanResultsObj.put(scanResultToJson(scanResult));
                     }
+                    rpcDataObj.put("scan_results", scanResultsObj);
                 } catch (JSONException e) {
                     Log.d(TAG, "Failed to json RPC data", e);
                     return null;

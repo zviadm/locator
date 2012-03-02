@@ -65,7 +65,6 @@
                 android:id="@+id/text_location_id"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:inputType="number"
                 android:text="">
         </EditText>
     </LinearLayout>
