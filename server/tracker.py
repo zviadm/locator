@@ -232,6 +232,25 @@ def ratio_observation_probability(router_ratios, xy):
 def normalize_mac(address):
     return ":".join("0"+x if len(x) == 1 else x for x in address.split(":"))
 
+BSSID_TO_ROUTER = {
+        "00:0b:86:74:96:80" : "AP-4-01",
+        "00:0b:86:74:96:81" : "AP-4-01",
+
+        "00:0b:86:74:97:60" : "AP-4-02",
+        "00:0b:86:74:97:61" : "AP-4-02",
+
+        "00:0b:86:74:9a:80" : "AP-4-03",
+        "00:0b:86:74:9a:81" : "AP-4-03",
+
+        "00:0b:86:74:9a:90" : "AP-4-04",
+        "00:0b:86:74:9a:91" : "AP-4-04",
+
+        "00:0b:86:74:97:90" : "AP-4-05",
+        "00:0b:86:74:97:91" : "AP-4-05",
+        }
+
+# model_data: location: {normed_device_id: (mean, variance)}
+
 TRAINING_DATA = [
     ('../locdata/zviad1.csv', 'zviad1', (5295, 196)), #z1
     ('../locdata/zviad2.csv', 'zviad2', (5295, 353)), #z2
@@ -242,28 +261,31 @@ TRAINING_DATA = [
     ('../locdata/zviad7.csv', 'zviad7', (5478, 152)), #z7
     ]
 
-# model_data: location: {normed_device_id: (mean, variance)}
-model_data = {}
-for training_fname, label, location in TRAINING_DATA:
-    data = defaultdict(list)
-    with open(training_fname, 'rb') as f:
-      reader = csv.reader(f)
-      for recording_id, loc_name, ts, ssid, device_id, strength in reader:
-        if True or 'Dropbox' in ssid:
-            m = normalize_mac(device_id)
-            if m in BSSID_TO_ROUTER:
-                data[BSSID_TO_ROUTER[m]].append(float(strength))
-    # NSAMPLES=10
-    model_data[location] = dict((key, (mean(val), max(0.2, std(val)))) for key, val in data.iteritems())
+def build_model(training_data=TRAINING_DATA):
+    model_data = {}
+    for training_fname, label, location in training_data:
+        data = defaultdict(list)
+        with open(training_fname, 'rb') as f:
+          reader = csv.reader(f)
+          for recording_id, loc_name, ts, ssid, device_id, strength in reader:
+            if True or 'Dropbox' in ssid:
+                data[device_id].append(float(strength))
+                # m = normalize_mac(device_id)
+                # if m in BSSID_TO_ROUTER:
+                #     data[BSSID_TO_ROUTER[m]].append(float(strength))
+        # NSAMPLES=10
+        model_data[location] = dict((key, (mean(val), max(0.2, std(val)))) for key, val in data.iteritems())
+    return model_data
 
+model_data = build_model()
 
 def distancesq(xy1, xy2):
     x1, y1 = xy1
     x2, y2 = xy2
     return (x1-x2)**2 + (y1-y2)**2
 
-def interp_observation_probability(router_readings, xy):
-    (dist1sq, loc1, l1), (dist2sq, loc2, l2) = sorted((distancesq(xy, location), device_dict, location) for location, device_dict in model_data.iteritems())[:2]
+def interp_observation_probability(model, router_readings, xy):
+    (dist1sq, loc1, l1), (dist2sq, loc2, l2) = sorted((distancesq(xy, location), device_dict, location) for location, device_dict in model.iteritems())[:2]
 
     # print "closest locs: ", dist1sq, l1
     # print "closest locs: ", dist2sq, l2
@@ -275,7 +297,9 @@ def interp_observation_probability(router_readings, xy):
 
     ll = 0.0
     # couldnt = 0
-    for device, signal in router_readings.iteritems():
+    for entry_dict in router_readings:
+        device = entry_dict['BSSID']
+        signal = float(entry_dict['level'])
         if device in loc1 and device in loc2:
             p1 = loglikelihood((signal - loc1[device][0])/(loc1[device][1]))
             p2 = loglikelihood((signal - loc2[device][0])/(loc2[device][1]))
@@ -402,7 +426,7 @@ def track_location(device_id, timestamp, router_levels=None, scan_results=None):
 
         ratio_model = partial(ratio_observation_probability, router_ratios=router_ratios)
         distance_model = partial(distance_observation_probability, router_distances=router_distances)
-        interp_model = partial(interp_observation_probability, router_readings=router_levels)
+        interp_model = partial(interp_observation_probability, router_readings=scan_results, model=model_data)
 
         def combo_model(xy):
             # logging.info("%.15f, %.15f" % (exp(ratio_model(xy=xy)), COMBO_ALPHA*exp(distance_model(xy=xy))))

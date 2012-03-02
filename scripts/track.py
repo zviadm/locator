@@ -8,7 +8,7 @@ from operator import itemgetter
 from functools import partial
 from numpy import log, exp, random, array, mean, std
 
-from server.tracker import get_router_distance_ratios, get_distance_from_level, get_distances_from_readings, loglikelihood, distance_observation_probability, ratio_observation_probability, reweight, resample, motion, draw_contour, get_mean_and_variance
+from server.tracker import get_router_distance_ratios, get_distance_from_level, get_distances_from_readings, loglikelihood, distance_observation_probability, ratio_observation_probability, reweight, resample, motion, draw_contour, get_mean_and_variance, interp_observation_probability, build_model
 
 BSSID_TO_ROUTER = {
         "00:0b:86:74:96:80" : "AP-4-01",
@@ -61,6 +61,17 @@ def get_raw_readings(fname):
             mac = normalize_mac(m)
             readings[mac] = max(readings[mac], float(signal))
     return readings
+
+def get_scan_results(fname):
+    readings = defaultdict(lambda: -100)
+    results = []
+    with open(fname) as f:
+        r = csv.reader(f)
+        for record_id, name, ts, ssid, m, signal in r:
+            results.append({'BSSID': m, 'level': signal, 'SSID': ssid})
+            # mac = normalize_mac(m)
+            # readings[mac] = max(readings[mac], float(signal))
+    return results
 
 
 
@@ -158,60 +169,9 @@ TRAINING_DATA = [
     ]
 
 # model_data: location: {normed_device_id: (mean, variance)}
-model_data = {}
-for training_fname, label, location in TRAINING_DATA:
-    data = defaultdict(list)
-    with open(training_fname, 'rb') as f:
-      reader = csv.reader(f)
-      for recording_id, loc_name, ts, ssid, device_id, strength in reader:
-        if True or 'Dropbox' in ssid:
-            m = normalize_mac(device_id)
-            if m in BSSID_TO_ROUTER:
-                data[BSSID_TO_ROUTER[m]].append(float(strength))
-    # NSAMPLES=10
-    model_data[location] = dict((key, (mean(val), max(0.2, std(val)))) for key, val in data.iteritems())
+model_data = build_model(TRAINING_DATA)
 
-
-
-
-def distancesq(xy1, xy2):
-    x1, y1 = xy1
-    x2, y2 = xy2
-    return (x1-x2)**2 + (y1-y2)**2
-
-def interp_model(router_readings, xy):
-    (dist1sq, loc1, l1), (dist2sq, loc2, l2) = sorted((distancesq(xy, location), device_dict, location) for location, device_dict in model_data.iteritems())[:2]
-
-    # print "closest locs: ", dist1sq, l1
-    # print "closest locs: ", dist2sq, l2
-
-    dist1 = math.sqrt(dist1sq)
-    dist2 = math.sqrt(dist2sq)
-
-    alpha = dist2/(dist1+dist2)
-
-    ll = 0.0
-    # couldnt = 0
-    for device, signal in router_readings.iteritems():
-        if device in loc1 and device in loc2:
-            p1 = loglikelihood((signal - loc1[device][0])/(loc1[device][1]))
-            p2 = loglikelihood((signal - loc2[device][0])/(loc2[device][1]))
-            ll += max(LOG_MIN_PROB, alpha*p1 + (1-alpha)*p2)
-            continue
-            # mu = loc1[device][0] * alpha + loc2[device][0] * (1-alpha)
-            # sigma = loc1[device][1] * alpha + loc2[device][1] * (1-alpha)
-            # ll += max(LOG_MIN_PROB, loglikelihood((signal - mu) / sigma))
-            # continue
-        else:
-            # couldnt += 1
-            # ll += LOG_MIN_PROB
-            continue
-        
-    # print "%d / %d" % (couldnt, len(router_readings))
-    # print ll
-    return ll
-
-observation_model = partial(interp_model, router_readings=get_normalized_readings(fname))
+observation_model = partial(interp_observation_probability, router_readings=get_scan_results(fname), model=model_data)
 
 # observation_model = combo_model
 # if len(sys.argv) > 2:
