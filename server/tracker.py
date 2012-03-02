@@ -51,7 +51,7 @@ ROUTER_HEIGHT = 2.1
 PIXELS_PER_METER = 22.0
 PIXELS_PER_METER_SQ = PIXELS_PER_METER**2
 POWERFUL_ROUTERS = set(['AP-1-07', 'AP-4-02'])
-CHANNEL_CORRECTION = 1.8
+CHANNEL_CORRECTION = -10
 
 ROUTER_POS = {
         # Part 1
@@ -199,7 +199,7 @@ def get_distance_from_level(level):
     return dist_in_meters
 
 def get_distances_from_readings(router_readings):
-    return [(ROUTER_POS[r], get_distance_from_level(l)*(CHANNEL_CORRECTION if r in POWERFUL_ROUTERS else 1.0)) for r, l in router_readings if l > -80]
+    return [(ROUTER_POS[r], get_distance_from_level(l + CHANNEL_CORRECTION if r in POWERFUL_ROUTERS else 0.0)) for r, l in router_readings if (l + CHANNEL_CORRECTION if r in POWERFUL_ROUTERS else 0.0) > -80]
 
 
 NORM_Z = log(0.39894)
