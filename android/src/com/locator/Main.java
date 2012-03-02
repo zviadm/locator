@@ -311,12 +311,25 @@ public class Main extends Activity
         return routerLevels;        
     }
     
-    private void setRoutersInfo(Map<String, Integer> routerLevels) {
+    private void setRoutersInfo(Map<String, Integer> routerLevels, List<ScanResult> scanResults) {
         StringBuilder routersInfo = new StringBuilder();
         routersInfo.append("Last Updated: " + Calendar.getInstance().getTime().toString() + "\n\n");
         for (Map.Entry<String, Integer> routerLevel : routerLevels.entrySet()) {
             routersInfo.append("Router: " + routerLevel.getKey() + "\n");
             routersInfo.append("LEVEL: " + routerLevel.getValue().toString() + "\n");
+            routersInfo.append("\n");
+        }
+        routersInfo.append("\n");
+        Collections.sort(scanResults, new Comparator<ScanResult>() {
+            @Override
+            public int compare(ScanResult scanResult, ScanResult scanResult1) {
+                return scanResult1.level - scanResult.level;
+            }
+        });
+        for (ScanResult scanResult : scanResults) {
+            routersInfo.append("BSSID: " + scanResult.BSSID + "\n");
+            routersInfo.append("SSID: "  + scanResult.SSID + "\n");
+            routersInfo.append("LEVEL: " + scanResult.level + "\n");
             routersInfo.append("\n");
         }
         textRouters.setText(routersInfo.toString());
@@ -331,12 +344,13 @@ public class Main extends Activity
             
             public void onReceive(Context context, Intent intent){
                 WifiManager wm = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-                listScanResults.add(wm.getScanResults());
+                List<ScanResult> scanResults = wm.getScanResults();
+                listScanResults.add(scanResults);
                 samplesLeft -= 1;
                 
                 if (samplesLeft == 0) {
                     Map<String, Integer> routerLevels = getRouterLevels(listScanResults);
-                    setRoutersInfo(routerLevels);
+                    setRoutersInfo(routerLevels, scanResults);
 
                     enableScanningButtons();
                     unregisterReceiver(this);
@@ -362,7 +376,8 @@ public class Main extends Activity
 
             public void onReceive(Context context, Intent intent){
                 WifiManager wm = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-                listScanResults.add(wm.getScanResults());
+                List<ScanResult> scanResults = wm.getScanResults();
+                listScanResults.add(scanResults);
 
                 if (!isTracking) {
                     enableScanningButtons();
@@ -371,7 +386,7 @@ public class Main extends Activity
                     if (listScanResults.size() > numSamples) {
                         listScanResults.remove(0);
                         Map<String, Integer> routerLevels = getRouterLevels(listScanResults);
-                        setRoutersInfo(routerLevels);
+                        setRoutersInfo(routerLevels, scanResults);
 
                         TrackLocationTask task = new TrackLocationTask(deviceId);
                         Map[] tmpRouterLevels = {routerLevels, };
