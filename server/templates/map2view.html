@@ -82,19 +82,26 @@
                         current_locations[device][1] += y_delta / current_steps[device];
                         current_steps[device]--;
                     }
-                    var loc_x = Math.floor(current_locations[device][0] * SCALE) + "px";
-                    var loc_y = Math.floor(current_locations[device][1] * SCALE) + "px";
+                    if (device in DEVICE_TO_NAME) {
+                        var width_x = 90;
+                        var height_x = 120;
+                    } else {
+                        var width_x = Math.floor(device_stat.variance[0]);
+                        var height_x = Math.floor(device_stat.variance[1]);
+                    }
+                    var loc_x = Math.floor(current_locations[device][0] * SCALE) + (width_x / 2.0);
+                    var loc_y = Math.floor(current_locations[device][1] * SCALE) + (height_x / 2.0);
 
                     if (device in DEVICE_TO_NAME) {
                         // when doing image all what matters is the x,y
-                        $("#" + device).css('left', loc_x);
-                        $("#" + device).css('top',  loc_y);
+                        $("#" + device).css('left', loc_x + "px");
+                        $("#" + device).css('top',  loc_y + "px");
                     } else {
-                        $("#" + device).css('left', loc_x);
-                        $("#" + device).css('top',  loc_y);
+                        $("#" + device).css('left', loc_x + "px");
+                        $("#" + device).css('top',  loc_y + "px");
 
-                        $("#" + device).css('width', Math.floor(device_stat.variance[0]) + "px");
-                        $("#" + device).css('height', Math.floor(device_stat.variance[1]) + "px");
+                        $("#" + device).css('width', width_x + "px");
+                        $("#" + device).css('height', width_y + "px");
                         $("#" + device).css('background', device_stat.color);
                     }
                 }
