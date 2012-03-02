@@ -294,7 +294,7 @@ def interp_observation_probability(model, router_readings, xy):
     alpha = dist2/(dist1+dist2)
 
     ll = 0.0
-    # couldnt = 0
+    couldnt = 0
     for entry_dict in router_readings:
         device = entry_dict['BSSID']
         signal = float(entry_dict['level'])
@@ -308,9 +308,10 @@ def interp_observation_probability(model, router_readings, xy):
             # ll += max(LOG_MIN_PROB, loglikelihood((signal - mu) / sigma))
             # continue
         else:
-            # couldnt += 1
+            couldnt += 1
             # ll += LOG_MIN_PROB
             continue
+    logging.info("couldnt: (%d / %d)" % (couldnt, len(router_readings)))
     return ll
 
 
@@ -425,9 +426,6 @@ def track_location(device_id, timestamp, router_levels=None, scan_results=None):
         ratio_model = partial(ratio_observation_probability, router_ratios=router_ratios)
         distance_model = partial(distance_observation_probability, router_distances=router_distances)
 
-        logging.info(model_data)
-
-        logging.info(scan_results)
         interp_model = partial(interp_observation_probability, router_readings=scan_results, model=model_data)
 
         def combo_model(xy):
