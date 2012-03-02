@@ -10,6 +10,7 @@ import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.text.Html;
 import android.text.format.Time;
 import android.util.Log;
@@ -51,7 +52,8 @@ public class Main extends Activity
     private TextView textRouters = null;
     
     private ProgressBar progressSamples = null;
-    
+
+    private PowerManager.WakeLock wl = null;
     private HttpClient httpClient = null;
 
     protected class TrackLocationTask extends AsyncTask<Map<String, Integer>, Void, Void> {
@@ -399,12 +401,12 @@ public class Main extends Activity
     private void setRoutersInfo(Map<String, Integer> routerLevels, List<ScanResult> scanResults) {
         StringBuilder routersInfo = new StringBuilder();
         routersInfo.append("Last Updated: " + Calendar.getInstance().getTime().toString() + "\n\n");
-        for (Map.Entry<String, Integer> routerLevel : routerLevels.entrySet()) {
-            routersInfo.append("Router: " + routerLevel.getKey() + "\n");
-            routersInfo.append("LEVEL: " + routerLevel.getValue().toString() + "\n");
-            routersInfo.append("\n");
-        }
-        routersInfo.append("\n");
+//        for (Map.Entry<String, Integer> routerLevel : routerLevels.entrySet()) {
+//            routersInfo.append("Router: " + routerLevel.getKey() + "\n");
+//            routersInfo.append("LEVEL: " + routerLevel.getValue().toString() + "\n");
+//            routersInfo.append("\n");
+//        }
+//        routersInfo.append("\n");
         Collections.sort(scanResults, new Comparator<ScanResult>() {
             @Override
             public int compare(ScanResult scanResult, ScanResult scanResult1) {
@@ -415,6 +417,7 @@ public class Main extends Activity
             routersInfo.append("BSSID: " + scanResult.BSSID + "\n");
             routersInfo.append("SSID: "  + scanResult.SSID + "\n");
             routersInfo.append("LEVEL: " + scanResult.level + "\n");
+            routersInfo.append("FREQ: " + scanResult.frequency + "\n");
             routersInfo.append("\n");
         }
         textRouters.setText(routersInfo.toString());
@@ -537,8 +540,17 @@ public class Main extends Activity
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        wl = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK, "Locator Lock");
+        wl.acquire();
+    }
+
+    @Override
     public void onPause() {
         super.onPause();
         isTracking = false;
+        wl.release();
     }
 }
