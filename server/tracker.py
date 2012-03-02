@@ -434,7 +434,7 @@ def track_location(device_id, timestamp, router_levels=None, scan_results=None):
             return ratio_model(xy=xy) + COMBO_ALPHA*distance_model(xy=xy)
 
         #observation_models = [combo_model, distance_model, ratio_model, interp_model]
-        observation_models = [distance_model]
+        observation_models = [interp_model, distance_model]
 
         image_data = []
         device_stats = {}
@@ -452,7 +452,7 @@ def track_location(device_id, timestamp, router_levels=None, scan_results=None):
             device_stats[device_id + "_" + str(i)] = {
                     "location" : mean_xy,
                     "variance" : var_xy,
-                    "color"    : ["red", "green"][i],
+                    "color"    : ["green", "red"][i],
                     }
 
         # update map information
