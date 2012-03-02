@@ -76,7 +76,16 @@
                     $("#" + device).css('left', loc_x);
                     $("#" + device).css('top',  loc_y);
                 }
+            }
 
+            function point_it(event){
+                pos_x = event.offsetX?(event.offsetX):event.pageX-document.getElementById("map").offsetLeft;
+                pos_y = event.offsetY?(event.offsetY):event.pageY-document.getElementById("map").offsetTop;
+                document.getElementById("click_xy").value = pos_x + ", " + pos_y;
+                document.getElementById("click_xy").style.left = pos_x + "px";
+                document.getElementById("click_xy").style.top = pos_y + "px";
+                document.getElementById("click_xy").focus();
+                document.getElementById("click_xy").select();
             }
 
             $(document).ready(function() {
@@ -86,20 +95,17 @@
         </script>
     </head>
     <body>
-        <h1 align="center">t..nt t..nt tntttt t.t t..t t.....</h1>
+        <!-- <h1 align="center">t..nt t..nt tntttt t.t t..t t.....</h1> -->
+        <form>
+            You pointed on
+        </form>
         <div style="position:relative;width:100%;height:100%">
-            <div style="position:absolute;top:0;left:0;width:100%;height:100%">
-                <table cellspacing="0" border="0">
-                    <tr>
-                        <td><img src="/static/images/part1.png" /></td>
-                        <td><img src="/static/images/part2.png" /></td>
-                        <td><img src="/static/images/part3.png" /></td>
-                        <td><img src="/static/images/part4.png" /></td>
-                    </tr>
-                </table>
+            <div id="map" style="position:absolute;top:0;left:0;width:100%;height:100%" onclick="point_it(event)">
+                <img src="/static/images/awesomemap.png" />
             </div>
-            <div id="devices" style="position:relative;top:0;left:0;width:100%;height:100%">
-            </div>
+            <div id="devices" style="position:relative;top:0;left:0;width:100%;height:100%"></div>
+            <input type="text" id="click_xy" size="8" style="position:absolute;top-10000px;left:-10000px;" />
         </div>
+
     </body>
 </html>
