@@ -31,7 +31,7 @@ YSTEP = 50
 
 # variances for different methods
 LOG_MIN_PROB = -20
-MOTION_STDEV = 25
+MOTION_STDEV = 40
 
 COMBO_ALPHA = 2
 MIN_RATIO_STD = 0.2
