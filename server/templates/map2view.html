@@ -12,6 +12,7 @@
             };
             var SCALE = 1.0;
 
+            var debug_info = "";
             var device_stats = {};
             var current_locations = {};
             var current_steps = {}
@@ -32,6 +33,10 @@
                     if(xmlhttp.readyState == 4) {
                         if (xmlhttp.status == 200) {
                             var ret = JSON.parse(xmlhttp.responseText);
+                            debug_info = ret["debug_info"];
+                            $("#infotext").empty();
+                            $("#infotext").append('<pre>' + debug_info + '</pre>');
+
                             for (var device in ret["devices"]) {
                                 var device_ret = ret["devices"][device];
                                 var device = device.replace(/\:/g, "");
@@ -110,11 +115,14 @@
             function point_it(event){
                 pos_x = event.offsetX?(event.offsetX):event.pageX-document.getElementById("map").offsetLeft;
                 pos_y = event.offsetY?(event.offsetY):event.pageY-document.getElementById("map").offsetTop;
-                document.getElementById("click_xy").value = pos_x + ", " + pos_y;
-                document.getElementById("click_xy").style.left = pos_x + "px";
-                document.getElementById("click_xy").style.top = pos_y + "px";
-                document.getElementById("click_xy").focus();
-                document.getElementById("click_xy").select();
+                //document.getElementById("click_xy").value = pos_x + ", " + pos_y;
+                //document.getElementById("click_xy").style.left = pos_x + "px";
+                //document.getElementById("click_xy").style.top = pos_y + "px";
+                //document.getElementById("click_xy").focus();
+                //document.getElementById("click_xy").select();
+
+                $("#infotext").css('left', pos_x + "px");
+                $("#infotext").css('top', pos_y + "px");
             }
 
             $(document).ready(function() {
@@ -131,6 +139,7 @@
             </div>
             <div id="devices" style="position:relative;top:0;left:0;width:100%;height:100%"></div>
             <input type="text" id="click_xy" size="8" style="position:absolute;top-10000px;left:-10000px;" />
+            <div id="infotext" style="position:absolute;top-10000px;left:-10000px;"></div>
         </div>
 
     </body>

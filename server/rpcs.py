@@ -1,10 +1,8 @@
 from __future__ import with_statement, absolute_import
 import os
-import threading
-import time
 
 import tracker
-from tracker_info import get_device_stats
+from tracker_info import get_device_stats, get_map_info
 
 def location_sample(device_id, location_id, timestamp, scan_results):
     LOCDATA_DIR = "/srv/locdata"
@@ -21,4 +19,5 @@ def track_location(device_id, timestamp, router_levels):
 def get_locations():
     return {
         "devices" : get_device_stats(),
+        "debug_info" : get_map_info(),
         }
