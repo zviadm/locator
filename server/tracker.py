@@ -316,7 +316,7 @@ def reweight(samples, observation_model):
 
 # resample
 def resample(samples):
-    counts = random.multinomial(min(MAX_PARTICLES, len(samples)), zip(*samples)[0])
+    counts = random.multinomial(MAX_PARTICLES, zip(*samples)[0])
     return [list(x) for x in zip(counts, zip(*samples)[1]) if x[0] > 0]
 
 def motion(samples):
