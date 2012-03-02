@@ -6,7 +6,7 @@ import sys
 from collections import defaultdict
 from operator import itemgetter
 from functools import partial
-from numpy import log, exp, random, array, mean
+from numpy import log, exp, random, array, mean, std
 
 from server.tracker import get_router_distance_ratios, get_distance_from_level, get_distances_from_readings, loglikelihood, distance_observation_probability, ratio_observation_probability, reweight, resample, motion, draw_contour, get_mean_and_variance
 
@@ -54,26 +54,7 @@ def get_normalized_readings(fname):
     return readings
 
 
-# def get_router_distance_ratios(router_readings):
-#     idx = [(i,j) for i in range(NUM_BEST) for j in range(i+1, NUM_BEST)]
-#     toret = []
-#     for i, j in idx:
-#         r1, l1 = router_readings[i]
-#         r2, l2 = router_readings[j]
 
-#         if l1 > l2:
-#             toret.append((ROUTER_POS[r1], ROUTER_POS[r2], 10 ** ((l2 - l1)/(10*N))))
-#         else:
-#             toret.append((ROUTER_POS[r2], ROUTER_POS[r1], 10 ** ((l1 - l2)/(10*N))))
-#     return toret
-
-
-
-# readings = get_normalized_readings('../newdata/standing_client2.csv')
-# readings = get_normalized_readings('../newdata/standing_drew1.csv')
-# readings = get_normalized_readings('../newdata/standing_drew2.csv')
-# readings = get_normalized_readings('../newdata/standing_breakuproom1.csv')
-# readings = get_normalized_readings('../newdata/standing_breakfastbar1.csv')
 
 fname = '../newdata/standing_drew2.csv'
 if len(sys.argv) > 1:
@@ -99,12 +80,6 @@ img = mpimg.imread('../map/part4.png')
 imgplot = plt.imshow(img)
 
 MAX_PARTICLES = 200
-# XMIN = 800
-# XMAX = 1500
-# XSTEP = 25
-# YMIN = 100
-# YMAX = 1000
-# YSTEP = 25
 XMIN = 0
 XMAX = 1500
 XSTEP = 100
@@ -156,6 +131,66 @@ def combo_model(xy):
     return ratio_model(xy=xy) + COMBO_ALPHA*distance_model(xy=xy)
 
 
+TRAINING_DATA = [
+    ('../newdata/bromancechamber1.csv', 'bromancechamber', (1160,  155)), # bromance
+    ('../newdata/breakuproom1.csv', 'breakuproom', (1280,  155)), # breakup
+    ('../newdata/arrears1.csv', 'arrears', (1400,  155)), # arrears
+    ('../newdata/molly1.csv', 'molly', (1100,  350)), # molly
+    ('../newdata/client1.csv', 'client', (1400, 450)), # client
+    ('../newdata/drew1.csv', 'drew', (1400, 620)), # drew
+    ('../newdata/breakfastbar1.csv', 'breakfastbar', (1100, 570)), # breakfastbar
+    ]
+
+# model_data: location: {normed_device_id: (mean, variance)}
+model_data = {}
+for training_fname, label, location in TRAINING_DATA:
+    data = defaultdict(list)
+    with open(training_fname, 'rb') as f:
+      reader = csv.reader(f)
+      for ssid, device_id, strength in reader:
+        if True or 'Dropbox' in ssid:
+          data[normalize_mac(device_id)].append(float(strength))
+    NSAMPLES=10
+    model_data[location] = dict((key, (mean(val), max(0.2, std(val)))) for key, val in data.iteritems() if len(val) == NSAMPLES)
+
+def get_raw_readings(fname):
+    readings = defaultdict(lambda: -90)
+    with open(fname) as f:
+        r = csv.reader(f)
+        for ssid, m, signal in r:
+            mac = normalize_mac(m)
+            readings[mac] = max(readings[mac], float(signal))
+    return readings
+
+
+def distancesq(xy1, xy2):
+    x1, y1 = xy1
+    x2, y2 = xy2
+    return (x1-x2)**2 + (y1-y2)**2
+
+def interp_model(router_readings, xy):
+    (dist1sq, loc1, l1), (dist2sq, loc2, l2) = sorted((distancesq(xy, location), device_dict, location) for location, device_dict in model_data.iteritems())[:2]    
+
+    dist1 = math.sqrt(dist1sq)
+    dist2 = math.sqrt(dist2sq)
+
+    alpha = dist2/(dist1+dist2)
+
+    ll = 0.0
+    # couldnt = 0
+    for device, signal in router_readings.iteritems():
+        if device in loc1 and device in loc2:
+            mu = loc1[device][0] * alpha + loc2[device][0] * (1-alpha)
+            sigma = loc1[device][1] * alpha + loc2[device][1] * (1-alpha)
+        else:
+            # couldnt += 1
+            continue
+        ll += max(LOG_MIN_PROB, loglikelihood((signal - mu) / sigma))
+    # print "%d / %d" % (couldnt, len(router_readings))
+    # print ll
+    return ll
+
+
 observation_model = combo_model
 if len(sys.argv) > 2:
     if sys.argv[2] == 'distance':
@@ -164,6 +199,14 @@ if len(sys.argv) > 2:
     if sys.argv[2] == 'ratio':
         print 'ratio model'
         observation_model = ratio_model
+    if sys.argv[2] == 'interp':
+        print 'interp model'
+        observation_model = interp_model
+
+
+
+observation_model = partial(interp_model, router_readings=get_raw_readings(fname))
+
 
 # observation_model = partial(ratio_observation_probability, router_ratios=[
 #     ("AP-4-01", "AP-4-02", 1.0), 

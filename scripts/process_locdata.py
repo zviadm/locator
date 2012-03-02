@@ -1,14 +1,15 @@
 import math
 import csv
+from collections import defaultdict
 
 LOCATIONS = {
-    'zviad1': (1, 1),
-    'zviad2': (1, 1),
-    'zviad3': (1, 1),
-    'zviad4': (1, 1),
-    'zviad5': (1, 1),
-    'zviad6': (1, 1),    
-    'zviad7': (1, 1),    
+    'zviad1': (5209, 186),
+    'zviad2': (5210, 354),
+    'zviad3': (5202, 553),
+    'zviad4': (4948, 546),
+    'zviad5': (4953, 398),
+    'zviad6': (4949, 242),
+    'zviad7': (5396, 152),
     }
 
 BSSID_TO_ROUTER = {
@@ -30,11 +31,11 @@ BSSID_TO_ROUTER = {
 
 
 ROUTER_POS = {
-        "AP-4-01" : (500, 1105),
-        "AP-4-02" : (450, 292),
-        "AP-4-03" : (687, 724),
-        "AP-4-04" : (1203, 315),
-        "AP-4-05" : (1130, 970),
+        "AP-4-01" : (4897, 598),
+        "AP-4-02" : (4898, 200),
+        "AP-4-03" : (4958, 412),
+        "AP-4-04" : (5242, 158),
+        "AP-4-05" : (5182, 538),
         }
 
 
@@ -42,21 +43,25 @@ ROUTER_POS = {
 DATA = [
     '../locdata/zviad1.csv',
     '../locdata/zviad2.csv',
-    '../locdata/zviad3.csv',
+    # '../locdata/zviad3.csv',
     '../locdata/zviad4.csv',
     '../locdata/zviad5.csv',
     '../locdata/zviad6.csv',
     '../locdata/zviad7.csv',
-    '../locdata/zviad1.csv',
     ]
+
+PIXEL_TO_M = 22
 
 def find_distance(router_loc, reading_loc):
     x1, y1 = router_loc
+
     x2, y2 = reading_loc
 
-    return math.sqrt((x1-x2)**2 + (y1 - y2)**2 + 2.5**2)
+    return math.sqrt((x1-x2)**2/PIXEL_TO_M**2 + (y1 - y2)**2/PIXEL_TO_M**2. + 2.1**2)
 
 output = []
+router_specific = defaultdict(list)
+location_specific = defaultdict(list)
 for fname in DATA:
     with open(fname, 'rb') as f:
         reader = csv.reader(f)
@@ -67,8 +72,23 @@ for fname in DATA:
      
                 distance = find_distance(router_loc, reading_loc)
                 output.append((distance, float(signal)))
+                router_specific[BSSID_TO_ROUTER[bssid]].append((distance, float(signal)))
+                location_specific[fname].append((distance, float(signal)))
 
 with open('../locdata/all_zviad.csv', 'wb') as fout:
     writer = csv.writer(fout)
     for entry in output:
         writer.writerow(entry)
+
+for router_name, entries in router_specific.iteritems():
+    with open('../locdata/router/%s.csv' % router_name[-2:], 'wb') as fout:
+        writer = csv.writer(fout)
+        for entry in entries:
+            writer.writerow(entry)
+
+for fname, entries in location_specific.iteritems():
+    with open('../locdata/location/%s.csv' % fname[-5:], 'wb') as fout:
+        writer = csv.writer(fout)
+        for entry in entries:
+            writer.writerow(entry)
+
