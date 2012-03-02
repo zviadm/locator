@@ -12,7 +12,9 @@
                 "c8aa21b053c3_1" : "zviad",
                 //"c8aa21b053c3_1" : "zviad",
             };
+            var ROUTER_POS = {% raw ROUTER_POS %};
             var SCALE = 1.0;
+            var RSZ = 35.0;
 
             var debug_info = "";
             var last_pos_x = 0, last_pos_y = 0, dist_xy = 0;
@@ -137,6 +139,15 @@
             }
 
             $(document).ready(function() {
+                for (var router in ROUTER_POS) {
+                    $("#routers").append(
+                        '<div style="position:absolute;left:' + (ROUTER_POS[router][0] - RSZ / 2.0) + 'px;top:' + (ROUTER_POS[router][1] - RSZ / 2.0) + 'px;' +
+                            'width:' + RSZ + 'px;height:' + RSZ + 'px;background:black;' +
+                            '-webkit-border-radius:999px;-moz-border-radius:999px;border-radius:999px;behavior: url(PIE.htc);">' +
+                            '<div style="color:green;font-weight:bold;position:absolute;top:8px;left:2px">' + router.substr(-4) + '</div>' +
+                        '</div>');
+                }
+
                 setTimeout('update_locations()', LOCATION_UPDATE_RATE);
                 setInterval('animate_locations()', ANIMATION_UPDATE_RATE);
             });
@@ -149,6 +160,7 @@
                 <img src="/static/images/transmap.png" />
             </div>
             <div id="devices" style="position:relative;top:0;left:0;width:100%;height:100%"></div>
+            <div id="routers" style="position:relative;top:0;left:0;width:100%;height:100%"></div>
             <input type="text" id="click_xy" size="8" style="position:absolute;top-10000px;left:-10000px;" />
             <div id="infotext" style="position:absolute;top-10000px;left:-10000px;"></div>
         </div>

@@ -12,6 +12,7 @@ import tornado.web
 
 import rpcs
 from tracker_info import get_map_info, get_map_images
+from tracker import ROUTER_POS
 DEBUG_MODE = False
 
 class RpcRequestHandler(tornado.web.RequestHandler):
@@ -85,7 +86,7 @@ class MapImageHandler(tornado.web.RequestHandler):
 
 class Map2ViewHandler(tornado.web.RequestHandler):
     def get(self):
-        self.render("map2view.html")
+        self.render("map2view.html", ROUTER_POS=simplejson.dumps(ROUTER_POS))
 
 if __name__ == "__main__":
     assert __file__
