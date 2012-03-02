@@ -4,6 +4,7 @@ import threading
 import time
 
 import tracker
+from tracker_info import get_device_stats
 
 def location_sample(device_id, location_id, timestamp, scan_results):
     LOCDATA_DIR = "/srv/locdata"
@@ -19,7 +20,5 @@ def track_location(device_id, timestamp, router_levels):
 
 def get_locations():
     return {
-        "locations" : {
-            "c8:aa:21:b0:53:c3" : (1000 + (int(time.time()) % 20) * 80, 200 + (int(time.time()) % 20) * 30),
-            }
+        "devices" : get_device_stats(),
         }

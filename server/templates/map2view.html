@@ -8,11 +8,11 @@
         <script type="text/javascript">
             // Database? who needs one when you can define everything as global constants...
             var DEVICE_TO_NAME = {
-                "c8aa21b053c3" : "zviad",
+                //"c8aa21b053c3" : "zviad",
             };
             var SCALE = 1.0;
 
-            var device_locations = {};
+            var device_stats = {};
             var current_locations = {};
             var current_steps = {}
 
@@ -32,22 +32,32 @@
                     if(xmlhttp.readyState == 4) {
                         if (xmlhttp.status == 200) {
                             var ret = JSON.parse(xmlhttp.responseText);
-                            for (var device in ret["locations"]) {
-                                var loc_x = Math.floor(ret["locations"][device][0] * SCALE);
-                                var loc_y = Math.floor(ret["locations"][device][1] * SCALE);
+                            for (var device in ret["devices"]) {
+                                var device_ret = ret["devices"][device];
                                 var device = device.replace(/\:/g, "");
 
-                                if (!(device in device_locations)) {
-                                    $("#devices").append(
-                                            '<div id="' + device + '" style="position:absolute;left:-1000px;top:-1000px">' +
-                                            '<img src="/static/images/' + DEVICE_TO_NAME[device] + '.jpg" /></div>'
-                                            );
+                                var loc_x = Math.floor(device_ret.location[0] * SCALE);
+                                var loc_y = Math.floor(device_ret.location[1] * SCALE);
+                                if (!(device in device_stats)) {
+                                    if (device in DEVICE_TO_NAME) {
+                                        $("#devices").append(
+                                                '<div id="' + device + '" style="position:absolute;left:-1000px;top:-1000px">' +
+                                                '<img src="/static/images/' + DEVICE_TO_NAME[device] + '.jpg" /></div>'
+                                                );
+                                    } else {
+                                        $("#devices").append(
+                                                '<div id="' + device + '" style="position:absolute;left:-1000px;top:-1000px;width:0px;height:0px;' +
+                                                    '-webkit-border-radius:999px;-moz-border-radius:999px;border-radius:999px;behavior: url(PIE.htc);">' +
+                                                '</div>'
+                                                );
+                                    }
                                     current_locations[device] = [loc_x, loc_y];
                                     current_steps[device] = 0;
                                 } else {
                                     current_steps[device] = LOCATION_UPDATE_RATE / ANIMATION_UPDATE_RATE;
                                 }
-                                device_locations[device] = [loc_x, loc_y];
+
+                                device_stats[device] = device_ret;
                             }
                         } else if (xmlhttp.status != 0) {
                             // TODO(zm): if 502 or 503, should probably retry after some time
@@ -60,11 +70,13 @@
 
             function animate_locations() {
                 for (var device in current_locations) {
+                    var device_stat = device_stats[device];
+
                     if (current_steps[device] <= 0) {
-                        current_locations[device] = device_locations[device];
+                        current_locations[device] = device_stat.location;
                     } else {
-                        var x_delta = device_locations[device][0] - current_locations[device][0];
-                        var y_delta = device_locations[device][1] - current_locations[device][1];
+                        var x_delta = device_stat.location[0] - current_locations[device][0];
+                        var y_delta = device_stat.location[1] - current_locations[device][1];
 
                         current_locations[device][0] += x_delta / current_steps[device];
                         current_locations[device][1] += y_delta / current_steps[device];
@@ -73,8 +85,18 @@
                     var loc_x = Math.floor(current_locations[device][0] * SCALE) + "px";
                     var loc_y = Math.floor(current_locations[device][1] * SCALE) + "px";
 
-                    $("#" + device).css('left', loc_x);
-                    $("#" + device).css('top',  loc_y);
+                    if (device in DEVICE_TO_NAME) {
+                        // when doing image all what matters is the x,y
+                        $("#" + device).css('left', loc_x);
+                        $("#" + device).css('top',  loc_y);
+                    } else {
+                        $("#" + device).css('left', loc_x);
+                        $("#" + device).css('top',  loc_y);
+
+                        $("#" + device).css('width', Math.floor(device_stat.variance[0]) + "px");
+                        $("#" + device).css('height', Math.floor(device_stat.variance[1]) + "px");
+                        $("#" + device).css('background', device_stat.color);
+                    }
                 }
             }
 
@@ -94,11 +116,11 @@
             });
         </script>
     </head>
-    <body>
+    <body background="/static/images/map_texture.png">
         <!-- <h1 align="center">t..nt t..nt tntttt t.t t..t t.....</h1> -->
         <div style="position:relative;width:100%;height:100%">
             <div id="map" style="position:absolute;top:0;left:0;width:100%;height:100%" onclick="point_it(event)">
-                <img src="/static/images/awesomemap.png" />
+                <img src="/static/images/transmap.png" />
             </div>
             <div id="devices" style="position:relative;top:0;left:0;width:100%;height:100%"></div>
             <input type="text" id="click_xy" size="8" style="position:absolute;top-10000px;left:-10000px;" />

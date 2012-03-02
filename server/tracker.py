@@ -206,8 +206,6 @@ def draw_contour(samples):
     Cs = plt.contour(range(XMIN, XMAX, XSTEP), range(YMIN, YMAX, YSTEP), Zs)
     cbar = plt.colorbar(Cs)
 
-lock = threading.Lock()
-
 def draw_image(samples):
     plt.cla()
     imgplot = plt.imshow(IMG)
@@ -229,7 +227,8 @@ device_samples = [
         defaultdict(lambda: [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)]),
         defaultdict(lambda: [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)]),
         ]
-
+device_locks_lock = threading.Lock()
+device_locks = {}
 
 def get_mean_and_variance(samples):
     xs, ys = zip(*zip(*samples)[1])
@@ -240,11 +239,16 @@ def get_mean_and_variance(samples):
     my = mean(ys)
     return (mx, my), (math.sqrt(mean((xs-mx).dot(xs-mx))), math.sqrt(mean((ys-my).dot(ys-my))))
 
-
-
 def track_location(device_id, timestamp, router_levels):
     global device_samples
-    with lock:
+    global device_locks
+
+    if not device_id in device_locks:
+        with device_locks_lock:
+            if not device_id in device_locks:
+                device_locks[device_id] = threading.Lock()
+
+    with device_locks[device_id]:
         readings = sorted(router_levels.iteritems(), key=itemgetter(1), reverse=True)
         router_ratios = get_router_distance_ratios(readings)
         router_distances = get_distances_from_readings(readings)
@@ -259,12 +263,20 @@ def track_location(device_id, timestamp, router_levels):
         observation_models = [combo_model, distance_model, ratio_model]
 
         image_data = []
+        device_stats = {}
         for i, model in enumerate(observation_models):
             reweight(device_samples[i][device_id], model)
             #draw_contour(device_samples[device_id])
             device_samples[i][device_id] = resample(device_samples[i][device_id])
             device_samples[i][device_id] = motion(device_samples[i][device_id])
-            image_data.append(draw_image(device_samples[i][device_id]))
+            #image_data.append(draw_image(device_samples[i][device_id]))
+
+            mean_xy, var_xy = get_mean_and_variance(device_samples[i][device_id])
+            device_stats[device_id + "_" + i] = {
+                    "location" : mean_xy,
+                    "variance" : var_xy,
+                    "color"    : ["blue", "red", "yellow"][i],
+                    }
 
         # update map information
         update_map_info({
@@ -273,5 +285,6 @@ def track_location(device_id, timestamp, router_levels):
                 "router dists  : " + " : ".join(("(%s, %6.3f)" % x) for x in router_distances) + "\n\n" + \
                 "router_ratios : " + " : ".join(("(%s, %s, %.3f)" % x) for x in router_ratios) + "\n" + \
                 "",
+            "device_stats" : device_stats,
             "images" : image_data,
             })
