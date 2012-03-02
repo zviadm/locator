@@ -203,7 +203,7 @@ def distance_observation_probability(router_distances, xy):
 
     for (x1, y1), distance in router_distances:
         dist = math.sqrt((x - x1)**2/PIXELS_PER_METER_SQ + (y - y1)**2 / PIXELS_PER_METER_SQ)
-        ll += max(LOG_MIN_PROB, loglikelihood((distance - dist) / max(MIN_DISTANCE_STD, distance/4.0)))
+        ll += max(LOG_MIN_PROB, loglikelihood((distance - dist) / max(MIN_DISTANCE_STD, distance**2/25.0)))
 
         # ll += log(max(exp(LOG_MIN_PROB), stats.norm(distance, distance/4.0).pdf(dist)))
     #     print distance, dist, log(max(exp(LOG_MIN_PROB), stats.norm(distance, DISTANCE_STDEV).pdf(dist)))
@@ -385,7 +385,7 @@ def get_router_levels(list_scan_results):
                 router_levels[router].append(scan_result["level"])
 
     for router, levels in router_levels.items():
-        router_levels[router] = sum(router_levels[router]) / len(router_levels[router])
+        router_levels[router] = float(sum(router_levels[router])) / len(router_levels[router])
     return router_levels
 
 def track_location(device_id, timestamp, router_levels=None, scan_results=None):
@@ -417,7 +417,8 @@ def track_location(device_id, timestamp, router_levels=None, scan_results=None):
             # logging.info("%.15f, %.15f" % (exp(ratio_model(xy=xy)), COMBO_ALPHA*exp(distance_model(xy=xy))))
             return ratio_model(xy=xy) + COMBO_ALPHA*distance_model(xy=xy)
 
-        observation_models = [combo_model, distance_model, ratio_model, interp_model]
+        #observation_models = [combo_model, distance_model, ratio_model, interp_model]
+        observation_models = [distance_model, interp_model]
 
         image_data = []
         device_stats = {}
@@ -426,7 +427,7 @@ def track_location(device_id, timestamp, router_levels=None, scan_results=None):
             #draw_contour(device_samples[device_id])
             device_samples[i][device_id] = resample(device_samples[i][device_id])
             if len(device_samples[i][device_id]) == 0:
-                device_samples[i][device_id] = defaultdict(lambda: [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)])
+                device_samples[i][device_id] = [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)]
 
             mean_xy, var_xy = get_mean_and_variance(device_samples[i][device_id])
             #image_data.append(draw_image(device_samples[i][device_id]))
@@ -435,14 +436,15 @@ def track_location(device_id, timestamp, router_levels=None, scan_results=None):
             device_stats[device_id + "_" + str(i)] = {
                     "location" : mean_xy,
                     "variance" : var_xy,
-                    "color"    : ["blue", "red", "yellow", "green"][i],
+                    "color"    : ["red", "green"][i],
                     }
 
         # update map information
         update_map_info({
             "info" : \
-                "readings      : " + " : ".join(("(%s, %6d)" % x) for x in readings) + "\n" + \
+                "readings      : " + " : ".join(("(%s, %6.3f)" % x) for x in readings) + "\n" + \
                 "router dists  : " + " : ".join(("(%s, %6.3f)" % x) for x in router_distances) + "\n" + \
+                "device_stats  : " + str("(%s, %s), var(%s, %s)" % (device_stats[device_id + "_0"]["location"] + device_stats[device_id + "_0"]["variance"])) + "\n" + \
                 "device_stats  : " + str("(%s, %s), var(%s, %s)" % (device_stats[device_id + "_1"]["location"] + device_stats[device_id + "_1"]["variance"])) + "\n" + \
                 "",
             "device_stats" : device_stats,
