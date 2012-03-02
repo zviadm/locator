@@ -114,6 +114,66 @@ public class Main extends Activity
         }
     }
 
+    protected class TrackLocation2Task extends AsyncTask<List<ScanResult>, Void, Void> {
+        private String deviceId;
+
+        public TrackLocation2Task(String deviceId) {
+            super();
+            this.deviceId = deviceId;
+        }
+
+        @Override
+        protected Void doInBackground(List<ScanResult>... listScanResults) {
+            HttpHost host = new HttpHost("locator.dropbox.com", 80);
+
+            for (List<ScanResult> scanResults : listScanResults) {
+                JSONObject rpcDataObj=new JSONObject();
+                try {
+                    rpcDataObj.put("method", "track_location2");
+                    rpcDataObj.put("device_id", deviceId);
+                    rpcDataObj.put("timestamp", (double) System.currentTimeMillis() / 1000.0);
+                    JSONArray scanResultsObj = new JSONArray();
+                    for (ScanResult scanResult : scanResults) {
+                        scanResultsObj.put(scanResultToJson(scanResult));
+                    }
+                    rpcDataObj.put("scan_results", scanResultsObj);
+                } catch (JSONException e) {
+                    Log.d(TAG, "Failed to json RPC data", e);
+                    return null;
+                }
+
+                String rpcData = rpcDataObj.toString();
+                HttpPost request = new HttpPost("/rpc");
+                try {
+                    request.setEntity(new StringEntity(rpcData, HTTP.UTF_8));
+                } catch (UnsupportedEncodingException e) {
+                    Log.d(TAG, "WTF????.", e);
+                    return null;
+                }
+
+                HttpResponse response;
+                try {
+                    response = httpClient.execute(host, request);
+                    response.getEntity().consumeContent();
+                    Log.d(TAG, "HttpResponse StatusLine: " + response.getStatusLine().toString());
+                } catch (ClientProtocolException e) {
+                    Log.d(TAG, "Failed to send sample...", e);
+                } catch (IOException e) {
+                    Log.d(TAG, "Failed to send sample...", e);
+                }
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void result) {
+            WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+            if (wm.getWifiState() == WifiManager.WIFI_STATE_ENABLED) {
+                wm.startScan();
+            }
+        }
+    }
+    
     protected class LocationSampleTask extends AsyncTask<List<ScanResult>, Void, Void> {
         private String deviceId;
         private String locationId;
@@ -310,7 +370,32 @@ public class Main extends Activity
         }
         return routerLevels;        
     }
-    
+
+    private Map<String, Integer> getRouterLevelsAvg(List<List<ScanResult>> listScanResults) {
+        Map<String, Integer> routerLevels = new HashMap<String, Integer>();
+        Map<String, Integer> routerCnts = new HashMap<String, Integer>();
+
+        for (List<ScanResult> scanResults : listScanResults) {
+            for (ScanResult scanResult : scanResults) {
+                if (BSSID_TO_ROUTER.containsKey(scanResult.BSSID)) {
+                    String router = BSSID_TO_ROUTER.get(scanResult.BSSID);
+                    if (routerLevels.containsKey(router)) {
+                        routerLevels.put(router, routerLevels.get(router) + scanResult.level);
+                        routerCnts.put(router, routerCnts.get(router) + 1);
+                    } else {
+                        routerLevels.put(router, scanResult.level);
+                        routerCnts.put(router, 1);
+                    }
+                }
+            }
+        }
+        
+        for (String router : routerLevels.keySet()) {
+            routerLevels.put(router, routerLevels.get(router) / routerCnts.get(router));
+        }
+        return routerLevels;
+    }
+
     private void setRoutersInfo(Map<String, Integer> routerLevels, List<ScanResult> scanResults) {
         StringBuilder routersInfo = new StringBuilder();
         routersInfo.append("Last Updated: " + Calendar.getInstance().getTime().toString() + "\n\n");
@@ -349,7 +434,7 @@ public class Main extends Activity
                 samplesLeft -= 1;
                 
                 if (samplesLeft == 0) {
-                    Map<String, Integer> routerLevels = getRouterLevels(listScanResults);
+                    Map<String, Integer> routerLevels = getRouterLevelsAvg(listScanResults);
                     setRoutersInfo(routerLevels, scanResults);
 
                     enableScanningButtons();
@@ -385,12 +470,12 @@ public class Main extends Activity
                 } else {
                     if (listScanResults.size() > numSamples) {
                         listScanResults.remove(0);
-                        Map<String, Integer> routerLevels = getRouterLevels(listScanResults);
+                        Map<String, Integer> routerLevels = getRouterLevelsAvg(listScanResults);
                         setRoutersInfo(routerLevels, scanResults);
 
-                        TrackLocationTask task = new TrackLocationTask(deviceId);
-                        Map[] tmpRouterLevels = {routerLevels, };
-                        task.execute(tmpRouterLevels);
+                        TrackLocation2Task task = new TrackLocation2Task(deviceId);
+                        List[] tmpScanResults = {scanResults, };
+                        task.execute(tmpScanResults);
                     } else {
                         if (wm.getWifiState() == WifiManager.WIFI_STATE_ENABLED) {
                             wm.startScan();
