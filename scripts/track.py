@@ -1,3 +1,4 @@
+
 import csv
 import math
 import sys
@@ -5,7 +6,9 @@ import sys
 from collections import defaultdict
 from operator import itemgetter
 from functools import partial
-from numpy import log, exp, random
+from numpy import log, exp, random, array, mean
+
+from server.tracker import get_router_distance_ratios, get_distance_from_level, get_distances_from_readings, loglikelihood, distance_observation_probability, ratio_observation_probability, reweight, resample, motion, draw_contour, get_mean_and_variance
 
 BSSID_TO_ROUTER = {
         "00:0b:86:74:96:80" : "AP-4-01",
@@ -51,18 +54,18 @@ def get_normalized_readings(fname):
     return readings
 
 
-def get_router_distance_ratios(router_readings):
-    idx = [(i,j) for i in range(NUM_BEST) for j in range(i+1, NUM_BEST)]
-    toret = []
-    for i, j in idx:
-        r1, l1 = router_readings[i]
-        r2, l2 = router_readings[j]
+# def get_router_distance_ratios(router_readings):
+#     idx = [(i,j) for i in range(NUM_BEST) for j in range(i+1, NUM_BEST)]
+#     toret = []
+#     for i, j in idx:
+#         r1, l1 = router_readings[i]
+#         r2, l2 = router_readings[j]
 
-        if l1 > l2:
-            toret.append((r1, r2, 10 ** ((l2 - l1)/(10*N))))
-        else:
-            toret.append((r2, r1, 10 ** ((l1 - l2)/(10*N))))
-    return toret
+#         if l1 > l2:
+#             toret.append((ROUTER_POS[r1], ROUTER_POS[r2], 10 ** ((l2 - l1)/(10*N))))
+#         else:
+#             toret.append((ROUTER_POS[r2], ROUTER_POS[r1], 10 ** ((l1 - l2)/(10*N))))
+#     return toret
 
 
 
@@ -111,7 +114,7 @@ YSTEP = 100
 LOG_MIN_PROB=-20
 
 MOTION_STDEV = 40
-COMBO_ALPHA = 1000
+COMBO_ALPHA = 2
 
 WAVELENGTH = 0.25
 N = 2.1
@@ -125,62 +128,12 @@ samples = [
 # x, y = zip(*samples)
 # plt.plot(x, y, 'o', markersize=2)
 
-def get_distance_from_level(level):
-    # from wikipedia
-    level = -level
-    # if level < 60:
-    #     n = 2.1
-    # elif level < 80:
-    #     n = 2.5
-    # else:
-    #     n = 2.9
-    n = 2.1
 
-    C = 20.0 * math.log(4.0 * math.pi / WAVELENGTH, 10)
-    r_in_meters = 10 ** ((level - C) / (10.0 * n))
 
-    r_in_meters = max(2.5, r_in_meters)
-    dist_in_meters = math.sqrt(r_in_meters ** 2 - 2.5 ** 2)
-    return dist_in_meters
 
-def get_distances_from_readings(router_readings):
-    return [(r, get_distance_from_level(l)) for r, l in router_readings]
+ratio_model = partial(ratio_observation_probability, router_ratios=get_router_distance_ratios(best))
 
-def distance_observation_probability(router_distances, xy):
-    ll = 0
-    x, y = xy    
-    for r, distance in router_distances:
-        x1, y1 = ROUTER_POS[r]
-
-        dist = math.sqrt((x - x1)**2/1600.0 + (y - y1)**2 / 1600.0 + 2.5**2)
-        ll += log(max(exp(LOG_MIN_PROB), stats.norm(distance, distance/4.0).pdf(dist)))
-        # ll += log(max(exp(LOG_MIN_PROB), stats.norm(distance, DISTANCE_STDEV).pdf(dist)))
-
-    #     print distance, dist, log(max(exp(LOG_MIN_PROB), stats.norm(distance, DISTANCE_STDEV).pdf(dist)))
-    # print ll
-    # print
-    return ll
-        
-
-def observation_probability(router_ratios, xy):
-    ll = 0.0
-    x, y = xy
-    for r1, r2, ratio in router_ratios:
-        x1, y1 = ROUTER_POS[r1]
-        x2, y2 = ROUTER_POS[r2]
-
-        dist1 = math.sqrt((x - x1)**2/1600.0 + (y - y1) ** 2/1600.0 + 2.5**2)
-        dist2 = math.sqrt((x - x2)**2/1600.0 + (y - y2) ** 2/1600.0 + 2.5**2)
-
-        if (dist1 / dist2) > 1.4:
-            ll += LOG_MIN_PROB
-
-        # TODO height correction
-        ll += log(max(exp(LOG_MIN_PROB), stats.norm(ratio, ratio/2.0).pdf(dist1 / dist2)))
-        # ll += log(max(exp(LOG_MIN_PROB), stats.norm(ratio, RATIO_STDEV).pdf(dist1 / dist2)))
-
-        # print ratio, dist1 / dist2, log(max(exp(LOG_MIN_PROB), stats.norm(ratio, RATIO_STDEV).pdf(dist1/dist2)))
-    return ll
+best = sorted(readings.iteritems(), key=itemgetter(1), reverse=True)[:NUM_BEST]
 
 print "readings: "
 print "\n".join(str(x) for x in sorted(best))
@@ -189,8 +142,6 @@ print
 print "distances: "
 print "\n".join(str(x) for x in sorted(get_distances_from_readings(best)))
 print
-
-ratio_model = partial(observation_probability, router_ratios=get_router_distance_ratios(best))
 
 print "ratios: "
 print "\n".join(str(x) for x in sorted(get_router_distance_ratios(best)))
@@ -201,7 +152,8 @@ distance_model = partial(distance_observation_probability, router_distances=get_
 
 def combo_model(xy):
     # print exp(ratio_model(xy=xy)), 10000*exp(distance_model(xy=xy))
-    return log(exp(ratio_model(xy=xy)) + COMBO_ALPHA*exp(distance_model(xy=xy)))
+    # print ratio_model(xy=xy), distance_model(xy=xy)
+    return ratio_model(xy=xy) + COMBO_ALPHA*distance_model(xy=xy)
 
 
 observation_model = combo_model
@@ -213,7 +165,7 @@ if len(sys.argv) > 2:
         print 'ratio model'
         observation_model = ratio_model
 
-# observation_model = partial(observation_probability, router_ratios=[
+# observation_model = partial(ratio_observation_probability, router_ratios=[
 #     ("AP-4-01", "AP-4-02", 1.0), 
 #     ("AP-4-02", "AP-4-03", 1.0), 
 #     ("AP-4-03", "AP-4-01", 1.0), 
@@ -231,52 +183,16 @@ if len(sys.argv) > 2:
 # print "(700, 700): ",  observation_model(xy=(700, 700))
 
 
-# obs reweight
-def reweight(samples):
-    Z = 0.0
-    for i in range(len(samples)):
-        weight, xy = samples[i]
-        nw = weight * 10**observation_model(xy=xy)
-        samples[i][0] = nw
-        Z += nw
-
-    for i in range(len(samples)):
-        samples[i][0] /= Z
 
 
-# resample
-def resample(samples):
-    counts = random.multinomial(min(MAX_PARTICLES, len(samples)), zip(*samples)[0])
-    return [list(x) for x in zip(counts, zip(*samples)[1]) if x[0] > 0]
-
-def motion(samples):
-    toret = []
-    for i in range(len(samples)):
-        w, (x, y) = samples[i]
-        for j in xrange(w):
-            toret.append([1, (x + random.normal(0, MOTION_STDEV), y + random.normal(0, MOTION_STDEV))])
-    return toret
-
-
-reweight(samples)
-def draw_contour(samples):
-    # draw contour of prob map
-    weights, locs = zip(*samples)
-    tmp = dict(zip(locs, weights))
-    Zs = [[tmp[(x, y)] if (x, y) in tmp else 0.0 for x in range(XMIN, XMAX, XSTEP)] for y in range(YMIN, YMAX, YSTEP)]
-
-    # print len(Zs), len(Zs[0]), Zs[0]
-
-    Cs = plt.contour(range(XMIN, XMAX, XSTEP), range(YMIN, YMAX, YSTEP), Zs)
-    cbar = plt.colorbar(Cs)
-
+reweight(samples, observation_model)
 draw_contour(samples)
 
-for i in range(5):
+for i in range(2):
     # print len(samples), samples[:5]
     samples = resample(samples)
     samples = motion(samples)
-    reweight(samples)    
+    reweight(samples, observation_model)    
     # print len(samples), samples[:5]
 
 
@@ -291,6 +207,10 @@ for name, (x, y) in ROUTER_POS.iteritems():
 # plt.plot(xs, ys, 'ro', markersize=10)
 
 
+(mx, my), (vx, vy) = get_mean_and_variance(samples)
+print "m, v: ", (mx, my), (vx, vy)
+
+plt.plot(mx, my, 'ko', markersize=(vx*vy/30000))
 
 plt.savefig('test.png')
 

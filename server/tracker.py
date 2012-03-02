@@ -16,7 +16,7 @@ matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
-from numpy import log, exp, random
+from numpy import log, exp, random, array, mean
 from scipy import stats
 
 from tracker_info import update_map_info
@@ -37,8 +37,10 @@ YSTEP = 100
 # variances for different methods
 LOG_MIN_PROB=-20
 MOTION_STDEV = 25
-COMBO_ALPHA = 100000000000000.0
+
+COMBO_ALPHA = 2
 MIN_RATIO_STD = 0.2
+MIN_RATIO_STD = 0.5
 
 MAX_PARTICLES = 200
 
@@ -70,21 +72,22 @@ def get_router_distance_ratios(router_readings):
         r2, l2 = router_readings[j]
 
         if l1 > l2:
-            toret.append((r1, r2, 10 ** ((l2 - l1)/(10*N))))
+            toret.append((ROUTER_POS[r1], ROUTER_POS[r2], 10 ** ((l2 - l1)/(10*N))))
         else:
-            toret.append((r2, r1, 10 ** ((l1 - l2)/(10*N))))
+            toret.append((ROUTER_POS[r2], ROUTER_POS[r1], 10 ** ((l1 - l2)/(10*N))))
     return toret
 
+def peval(coeffs, x):
+    a, b, c = coeffs
+    return a * x ** 2 + b * x + c
+
 def get_distance_from_level(level):
+    # n = 2.1
+    n = peval([  6.66666667e-05,  -1.06666667e-02,   1.62000000e+00], level)
+    # n = peval([  1.16666667e-03,   8.83333333e-02,   3.60000000e+00], level)
+
     # from wikipedia
     level = -level
-    # if level < 60:
-    #     n = 2.1
-    # elif level < 80:
-    #     n = 2.5
-    # else:
-    #     n = 2.9
-    n = 2.1
 
     C = 20.0 * math.log(4.0 * math.pi / WAVELENGTH, 10)
     r_in_meters = 10 ** ((level - C) / (10.0 * n))
@@ -94,16 +97,22 @@ def get_distance_from_level(level):
     return dist_in_meters
 
 def get_distances_from_readings(router_readings):
-    return [(r, get_distance_from_level(l)) for r, l in router_readings]
+    return [(ROUTER_POS[r], get_distance_from_level(l)) for r, l in router_readings]
+
+
+NORM_Z = log(0.39894)
+def loglikelihood(x):
+    return NORM_Z - 0.5*x*x
 
 def distance_observation_probability(router_distances, xy):
     ll = 0
     x, y = xy
-    for r, distance in router_distances:
-        x1, y1 = ROUTER_POS[r]
 
+    for (x1, y1), distance in router_distances:
         dist = math.sqrt((x - x1)**2/1600.0 + (y - y1)**2 / 1600.0)
-        ll += log(max(exp(LOG_MIN_PROB), stats.norm(distance, distance/4.0).pdf(dist)))
+        ll += max(LOG_MIN_PROB, loglikelihood((distance - dist) / max(MIN_DISTANCE_STD, distance/4.0)))
+
+        # ll += log(max(exp(LOG_MIN_PROB), stats.norm(distance, distance/4.0).pdf(dist)))
     #     print distance, dist, log(max(exp(LOG_MIN_PROB), stats.norm(distance, DISTANCE_STDEV).pdf(dist)))
     # print ll
     # print
@@ -113,18 +122,22 @@ def distance_observation_probability(router_distances, xy):
 def ratio_observation_probability(router_ratios, xy):
     ll = 0.0
     x, y = xy
-    for r1, r2, ratio in router_ratios:
-        x1, y1 = ROUTER_POS[r1]
-        x2, y2 = ROUTER_POS[r2]
+    for (x1, y1), (x2, y2), ratio in router_ratios:
 
-        dist1 = math.sqrt((x - x1)**2/1600.0 + (y - y1) ** 2/1600.0 + 2.5**2)
-        dist2 = math.sqrt((x - x2)**2/1600.0 + (y - y2) ** 2/1600.0 + 2.5**2)
-        if (dist1/dist2) > 1.4:
+        new_ratio = math.sqrt(((x - x1)**2/1600.0 + (y - y1) ** 2/1600.0 + 2.5**2)/((x - x2)**2/1600.0 + (y - y2) ** 2/1600.0 + 2.5**2))
+        if new_ratio > 1.4:
             ll += LOG_MIN_PROB
             continue
 
+        # dist1 = math.sqrt((x - x1)**2/1600.0 + (y - y1) ** 2/1600.0 + 2.5**2)
+        # dist2 = math.sqrt((x - x2)**2/1600.0 + (y - y2) ** 2/1600.0 + 2.5**2)
+        # if (dist1/dist2) > 1.4:
+        #     ll += LOG_MIN_PROB
+        #     continue
+
         # TODO height correction
-        ll += log(max(exp(LOG_MIN_PROB), stats.norm(ratio, max(ratio/2.0, MIN_RATIO_STD)).pdf(dist1 / dist2)))
+        ll += max(LOG_MIN_PROB, loglikelihood((new_ratio-ratio)/(max(ratio/2.0, MIN_RATIO_STD))))
+        # ll += log(max(exp(LOG_MIN_PROB), stats.norm(ratio, ratio/2.0).pdf(dist1 / dist2)))
     return ll
 
 
@@ -189,6 +202,18 @@ device_samples = [
         defaultdict(lambda: [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)]),
         ]
 
+
+def get_mean_and_variance(samples):
+    xs, ys = zip(*zip(*samples)[1])
+    xs = array(xs)
+    ys = array(ys)
+
+    mx = mean(xs)
+    my = mean(ys)
+    return (mx, my), (math.sqrt(mean((xs-mx).dot(xs-mx))), math.sqrt(mean((ys-my).dot(ys-my))))
+
+
+
 def track_location(device_id, timestamp, router_levels):
     global device_samples
     with lock:
@@ -201,7 +226,7 @@ def track_location(device_id, timestamp, router_levels):
 
         def combo_model(xy):
             # logging.info("%.15f, %.15f" % (exp(ratio_model(xy=xy)), COMBO_ALPHA*exp(distance_model(xy=xy))))
-            return log(exp(ratio_model(xy=xy)) + COMBO_ALPHA*exp(distance_model(xy=xy)))
+            return ratio_model(xy=xy) + COMBO_ALPHA*distance_model(xy=xy)
 
         observation_models = [combo_model, distance_model, ratio_model]
 
