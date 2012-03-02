@@ -414,9 +414,9 @@ def update_scan_results(new_scan_results, device_id):
         if bssid in BSSID_TO_ROUTER:
             router = BSSID_TO_ROUTER[bssid]
             if not router in device_scan_results[device_id]:
-                device_scan_results[device_id][router] = level
+                device_scan_results[device_id][router] = float(level)
             else:
-                device_scan_results[device_id][router] = device_scan_results[device_id][router]*(1-UPDATE_ALPHA) + level * (UPDATE_ALPHA)
+                device_scan_results[device_id][router] = device_scan_results[device_id][router]*(1-UPDATE_ALPHA) + float(level) * (UPDATE_ALPHA)
 
     for routers in device_scan_results[device_id]:
         toret[router] = device_scan_results[device_id][router]
@@ -442,11 +442,6 @@ def track_location(device_id, timestamp, router_levels=None, scan_results=None):
         if scan_results:
             if not device_id in device_scan_results:
                 device_scan_results[device_id] = {}
-                for scan_result in scan_results:
-                    bssid, level = scan_result["BSSID"], scan_result["level"]
-                    if bssid in BSSID_TO_ROUTER:
-                        router = BSSID_TO_ROUTER[bssid]
-                        device_scan_results[device_id][router] = scan_results
             update_scan_results(scan_results, device_id)
 
         readings = sorted(router_levels.iteritems(), key=itemgetter(1), reverse=True)
