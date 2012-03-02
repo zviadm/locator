@@ -423,9 +423,8 @@ def update_scan_results(new_scan_results, device_id):
                 device_scan_results[device_id][router] = float(level)
             else:
                 device_scan_results[device_id][router] = device_scan_results[device_id][router]*(1-UPDATE_ALPHA) + float(level) * (UPDATE_ALPHA)
+            toret[router] = device_scan_results[device_id][router]
 
-    for router in device_scan_results[device_id]:
-        toret[router] = device_scan_results[device_id][router]
     return toret
 
 def track_location(device_id, timestamp, router_levels=None, scan_results=None):
