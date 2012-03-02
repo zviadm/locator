@@ -16,7 +16,7 @@ matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
-from numpy import log, exp, random, array, mean
+from numpy import log, exp, random, array, mean, dot
 from scipy import stats
 
 from tracker_info import update_map_info
@@ -234,7 +234,8 @@ def get_mean_and_variance(samples):
 
     mx = mean(xs)
     my = mean(ys)
-    return (mx, my), (50, 50) #(math.sqrt(mean((xs-mx).dot(xs-mx))), math.sqrt(mean((ys-my).dot(ys-my))))
+    return (mx, my), (math.sqrt(dot((xs-mx), (xs-mx)) / len(xs)), math.sqrt(dot((ys-my), (ys-my)) / len(ys)))
+    #return (mx, my), (50, 50) #(math.sqrt(mean((xs-mx).dot(xs-mx))), math.sqrt(mean((ys-my).dot(ys-my))))
 
 def track_location(device_id, timestamp, router_levels):
     global device_samples
@@ -280,7 +281,7 @@ def track_location(device_id, timestamp, router_levels):
             "info" : \
                 "readings      : " + " : ".join(("(%s, %6d)" % x) for x in readings) + "\n" + \
                 "router dists  : " + " : ".join(("(%s, %6.3f)" % x) for x in router_distances) + "\n" + \
-                "device_stats  : " + str("(%s, %s)" % device_stats[device_id + "_1"]["location"]) + "\n" + \
+                "device_stats  : " + str("(%s, %s), var(%s, %s)" % (device_stats[device_id + "_1"]["location"] + device_stats[device_id + "_1"]["variance"])) + "\n" + \
                 "",
             "device_stats" : device_stats,
             "images" : image_data,
