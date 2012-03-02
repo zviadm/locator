@@ -442,7 +442,7 @@ def track_location(device_id, timestamp, router_levels=None, scan_results=None):
         if scan_results:
             if not device_id in device_scan_results:
                 device_scan_results[device_id] = {}
-            update_scan_results(scan_results, device_id)
+            router_levels = update_scan_results(scan_results, device_id)
 
         readings = sorted(router_levels.iteritems(), key=itemgetter(1), reverse=True)
         router_ratios = get_router_distance_ratios(readings)
