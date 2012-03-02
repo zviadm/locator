@@ -110,7 +110,7 @@ def lin_eval(coeffs, x):
 
 def get_distance_from_level(level):
     # n = 2.1
-    n = lin_eval([-0.07192023 -2.40415772], level)
+    n = lin_eval([-0.07192023, -2.40415772], level)
     # n = peval([  6.66666667e-05,  -1.06666667e-02,   1.62000000e+00], level)
     # n = peval([  1.16666667e-03,   8.83333333e-02,   3.60000000e+00], level)
 
