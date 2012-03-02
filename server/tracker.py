@@ -41,7 +41,7 @@ MAX_PARTICLES = 200
 # physical constants for determining path loss (wikipedia)
 WAVELENGTH = 0.125
 # N_COEFFS = [-0.07192023, -2.40415772]
-N_COEFFS = [-0.07363796 -2.52218124]
+N_COEFFS = [-0.07363796, -2.52218124]
 
 # map constants
 ROUTER_HEIGHT = 2.1
@@ -49,11 +49,11 @@ PIXELS_PER_METER = 22.0
 PIXELS_PER_METER_SQ = PIXELS_PER_METER**2
 ROUTER_POS = {
         # Part 4
-        "AP-4-01" : (5035, 543),
-        "AP-4-02" : (5038, 241),
-        "AP-4-03" : (5265, 537),
+        "AP-4-01" : (4980, 600),
+        "AP-4-02" : (4980, 200),
+        "AP-4-03" : (5041, 409),
         "AP-4-04" : (5325, 159),
-        "AP-4-05" : (5035, 397),
+        "AP-4-05" : (5265, 537),
 
         # "AP-4-01" : (500, 1105),
         # "AP-4-02" : (450, 292),
