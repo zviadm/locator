@@ -244,6 +244,19 @@ TRAINING_DATA = [
     ('../locdata/zviad5.csv', 'zviad5', (5029, 396)), #z5
     ('../locdata/zviad6.csv', 'zviad6', (5032, 237)), #z6
     ('../locdata/zviad7.csv', 'zviad7', (5478, 152)), #z7
+    ('../locdata/ft1.csv',  'ft1',  (5095, 83)),
+    ('../locdata/ft2.csv',  'ft2',  (5178, 200)),
+    ('../locdata/ft3.csv',  'ft3',  (5408, 258)),
+    ('../locdata/ft4.csv',  'ft4',  (5425, 477)),
+    ('../locdata/ft5.csv',  'ft5',  (5170, 540)),
+    ('../locdata/ft6.csv',  'ft6',  (5095, 691)),
+    ('../locdata/ft7.csv',  'ft7',  (4864, 536)),
+    ('../locdata/ft8.csv',  'ft8',  (4829, 235)),
+    ('../locdata/ft9.csv',  'ft9',  (5138, 453)),
+    ('../locdata/ft10.csv', 'ft10', (5138, 342)),
+    ('../locdata/ft11.csv', 'ft11', (5032, 459)),
+    ('../locdata/ft13.csv', 'ft13', (5288, 420)),
+    ('../locdata/ft14.csv', 'ft14', (5032, 331)),
     ]
 
 def build_model(training_data=TRAINING_DATA):
