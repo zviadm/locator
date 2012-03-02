@@ -441,7 +441,12 @@ def track_location(device_id, timestamp, router_levels=None, scan_results=None):
 
         if scan_results:
             if not device_id in device_scan_results:
-                device_scan_results[device_id] = scan_results
+                device_scan_results[device_id] = {}
+                for scan_result in scan_results:
+                    bssid, level = scan_result["BSSID"], scan_result["level"]
+                    if bssid in BSSID_TO_ROUTER:
+                        router = BSSID_TO_ROUTER[bssid]
+                        device_scan_results[device_id][router] = scan_results
             update_scan_results(scan_results, device_id)
 
         readings = sorted(router_levels.iteritems(), key=itemgetter(1), reverse=True)
