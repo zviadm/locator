@@ -38,6 +38,8 @@ MIN_RATIO_STD = 0.2
 MIN_DISTANCE_STD = 0.2
 MAX_PARTICLES = 400
 
+RUNNING_AVERAGE_LENGTH = 2
+
 # physical constants for determining path loss (wikipedia)
 WAVELENGTH = 0.125
 # N_COEFFS = [-0.07192023, -2.40415772]
@@ -417,7 +419,7 @@ def track_location(device_id, timestamp, router_levels=None, scan_results=None):
             if not device_id in device_scan_results:
                 device_scan_results[device_id] = []
             device_scan_results[device_id].append((timestamp, scan_results))
-            device_scan_results[device_id] = device_scan_results[device_id][-3:]
+            device_scan_results[device_id] = device_scan_results[device_id][-RUNNING_AVERAGE_LENGTH:]
             router_levels = get_router_levels(device_scan_results[device_id])
 
         readings = sorted(router_levels.iteritems(), key=itemgetter(1), reverse=True)
