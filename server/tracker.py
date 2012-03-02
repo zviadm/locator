@@ -298,20 +298,21 @@ def interp_observation_probability(model, router_readings, xy):
     for entry_dict in router_readings:
         device = entry_dict['BSSID']
         signal = float(entry_dict['level'])
+        if signal < -85: continue
         if device in loc1 and device in loc2:
-            p1 = loglikelihood((signal - loc1[device][0])/(loc1[device][1]))
-            p2 = loglikelihood((signal - loc2[device][0])/(loc2[device][1]))
-            ll += max(LOG_MIN_PROB, alpha*p1 + (1-alpha)*p2)
-            continue
-            # mu = loc1[device][0] * alpha + loc2[device][0] * (1-alpha)
-            # sigma = loc1[device][1] * alpha + loc2[device][1] * (1-alpha)
-            # ll += max(LOG_MIN_PROB, loglikelihood((signal - mu) / sigma))
+            # p1 = loglikelihood((signal - loc1[device][0])/(loc1[device][1]))
+            # p2 = loglikelihood((signal - loc2[device][0])/(loc2[device][1]))
+            # ll += max(LOG_MIN_PROB, alpha*p1 + (1-alpha)*p2)
             # continue
+            mu = loc1[device][0] * alpha + loc2[device][0] * (1-alpha)
+            sigma = loc1[device][1] * alpha + loc2[device][1] * (1-alpha)
+            ll += max(LOG_MIN_PROB, loglikelihood((signal - mu) / sigma))
+            continue
         else:
             couldnt += 1
             # ll += LOG_MIN_PROB
             continue
-    logging.info("couldnt: (%d / %d)" % (couldnt, len(router_readings)))
+    # logging.info("couldnt: (%d / %d)" % (couldnt, len(router_readings)))
     return ll
 
 
