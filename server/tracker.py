@@ -193,7 +193,7 @@ def get_distance_from_level(level):
     return dist_in_meters
 
 def get_distances_from_readings(router_readings):
-    return [(ROUTER_POS[r], get_distance_from_level(l)) for r, l in router_readings if l > -75]
+    return [(ROUTER_POS[r], get_distance_from_level(l)) for r, l in router_readings if l > -85]
 
 
 NORM_Z = log(0.39894)
