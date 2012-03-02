@@ -35,6 +35,7 @@
                             var ret = JSON.parse(xmlhttp.responseText);
                             debug_info = ret["debug_info"];
                             $("#infotext").empty();
+                            $("#infotext").append('<pre style="color:green;background:black;font-weight:bold">POS: ' + last_pos_x + ", " + last_pos_y + " - DIST: " + dist_xy + '</pre>');
                             $("#infotext").append('<pre style="color:green;background:black;font-weight:bold">' + debug_info + '</pre>');
 
                             for (var device in ret["devices"]) {
@@ -112,14 +113,12 @@
                 }
             }
 
-            var last_pos_x = 0, last_pos_y = 0;
+            var last_pos_x = 0, last_pos_y = 0, dist_xy = 0;
 
             function point_it(event) {
                 var pos_x = event.offsetX?(event.offsetX):event.pageX-document.getElementById("map").offsetLeft;
                 var pos_y = event.offsetY?(event.offsetY):event.pageY-document.getElementById("map").offsetTop;
                 var dist_xy = Math.sqrt((pos_x - last_pos_x) * (pos_x - last_pos_x) - (pos_y - last_pos_y) * (pos_y - last_pos_y));
-                last_pos_x = pos_x;
-                last_pos_y = pos_y;
                 //document.getElementById("click_xy").value = pos_x + ", " + pos_y;
                 //document.getElementById("click_xy").style.left = pos_x + "px";
                 //document.getElementById("click_xy").style.top = pos_y + "px";
@@ -128,9 +127,6 @@
 
                 $("#infotext").css('left', pos_x + "px");
                 $("#infotext").css('top', pos_y + "px");
-                $("#infotext").empty();
-                $("#infotext").append('<pre style="color:green;background:black;font-weight:bold">POS: ' + pos_x + ", " + pos_y + " - DIST: " + dist_xy + '</pre>');
-                $("#infotext").append('<pre style="color:green;background:black;font-weight:bold">' + debug_info + '</pre>');
             }
 
             $(document).ready(function() {
