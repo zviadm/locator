@@ -201,11 +201,7 @@ def get_distance_from_level(level):
 def get_distances_from_readings(router_readings):
     toret = []
     for r, l in router_readings:
-        corrected_level = (l+(CHANNEL_CORRECTION if r in POWERFUL_ROUTERS else 0.0))
-        # print r, corrected_level
-        if corrected_level < -80.0:
-            continue
-        toret.append((ROUTER_POS[r], get_distance_from_level(corrected_level)))
+        toret.append((ROUTER_POS[r], get_distance_from_level(l)))
     return toret
 
 NORM_Z = log(0.39894)
@@ -435,7 +431,13 @@ def update_scan_results(new_scan_results, device_id):
                 device_scan_results[device_id][router] = float(level)
             else:
                 device_scan_results[device_id][router] = device_scan_results[device_id][router]*(1-UPDATE_ALPHA) + float(level) * (UPDATE_ALPHA)
-            toret[router] = device_scan_results[device_id][router]
+
+            level_to_ret = device_scan_results[device_id][router]
+            corrected_level = (level_to_ret+(CHANNEL_CORRECTION if r in POWERFUL_ROUTERS else 0.0))
+            # print r, corrected_level
+            if corrected_level < -80.0:
+                continue
+            toret[router] = corrected_level
 
     return toret
 
