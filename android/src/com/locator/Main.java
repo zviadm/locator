@@ -5,7 +5,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.net.http.AndroidHttpClient;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
@@ -21,6 +20,7 @@ import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.protocol.HTTP;
@@ -44,9 +44,15 @@ public class Main extends Activity
     private View butSnapshot = null;
     private View butStartTracking = null;
     private View butEndTracking = null;
+    private View butGatherSamples = null;
 
     private EditText textNumOfSamples = null;
+    private EditText textLocationId = null;
     private TextView textRouters = null;
+    
+    private ProgressBar progressSamples = null;
+    
+    private HttpClient httpClient = null;
 
     protected class TrackLocationTask extends AsyncTask<Map<String, Integer>, Void, Void> {
         private String deviceId;
@@ -58,7 +64,6 @@ public class Main extends Activity
         
         @Override
         protected Void doInBackground(Map<String, Integer>... listRouterLevels) {
-            HttpClient httpClient = AndroidHttpClient.newInstance("Locator 1.0/Android", getApplicationContext());
             HttpHost host = new HttpHost("locator.dropbox.com", 80);
             
             for (Map<String, Integer> routerLevels : listRouterLevels) {
@@ -86,8 +91,7 @@ public class Main extends Activity
                     return null;
                 }
 
-                HttpResponse response = null;
-                Exception exc = null;
+                HttpResponse response;
                 try {
                     response = httpClient.execute(host, request);
                     response.getEntity().consumeContent();
@@ -101,6 +105,69 @@ public class Main extends Activity
             return null;
         }
         
+        @Override
+        protected void onPostExecute(Void result) {
+            WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+            if (wm.getWifiState() == WifiManager.WIFI_STATE_ENABLED) {
+                wm.startScan();
+            }
+        }
+    }
+
+    protected class LocationSampleTask extends AsyncTask<List<ScanResult>, Void, Void> {
+        private String deviceId;
+        private String locationId;
+
+        public LocationSampleTask(String deviceId, String locationId) {
+            super();
+            this.deviceId = deviceId;
+            this.locationId = locationId;
+        }
+
+        @Override
+        protected Void doInBackground(List<ScanResult>... listScanResults) {
+            HttpHost host = new HttpHost("locator.dropbox.com", 80);
+
+            for (List<ScanResult> scanResults : listScanResults) {
+                JSONObject rpcDataObj=new JSONObject();
+                try {
+                    rpcDataObj.put("method", "location_sample");
+                    rpcDataObj.put("device_id", deviceId);
+                    rpcDataObj.put("location_id", locationId);
+                    rpcDataObj.put("timestamp", (double) System.currentTimeMillis() / 1000.0);
+                    JSONArray scanResultsObj = new JSONArray();
+                    for (ScanResult scanResult : scanResults) {
+                        scanResultsObj.put(scanResultToJson(scanResult));
+                    }
+                    rpcDataObj.put("scan_results", scanResultsObj);
+                } catch (JSONException e) {
+                    Log.d(TAG, "Failed to json RPC data", e);
+                    return null;
+                }
+
+                String rpcData = rpcDataObj.toString();
+                HttpPost request = new HttpPost("/rpc");
+                try {
+                    request.setEntity(new StringEntity(rpcData, HTTP.UTF_8));
+                } catch (UnsupportedEncodingException e) {
+                    Log.d(TAG, "WTF????.", e);
+                    return null;
+                }
+
+                HttpResponse response;
+                try {
+                    response = httpClient.execute(host, request);
+                    response.getEntity().consumeContent();
+                    Log.d(TAG, "HttpResponse StatusLine: " + response.getStatusLine().toString());
+                } catch (ClientProtocolException e) {
+                    Log.d(TAG, "Failed to send sample...", e);
+                } catch (IOException e) {
+                    Log.d(TAG, "Failed to send sample...", e);
+                }
+            }
+            return null;
+        }
+
         @Override
         protected void onPostExecute(Void result) {
             WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
@@ -135,10 +202,16 @@ public class Main extends Activity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
 
+        httpClient = new DefaultHttpClient();
+
         butSnapshot = findViewById(R.id.but_snapshot);
         butStartTracking = findViewById(R.id.but_start_tracking);
         butEndTracking = findViewById(R.id.but_end_tracking);
+        butGatherSamples = findViewById(R.id.but_gather_samples);
+        progressSamples = (ProgressBar)findViewById(R.id.progress_samples);
+        
         textNumOfSamples = (EditText)findViewById(R.id.text_num_samples);
+        textLocationId = (EditText)findViewById(R.id.text_location_id);
         textRouters = (TextView)findViewById(R.id.text_routers);
 
         butSnapshot.setOnClickListener(new View.OnClickListener() {
@@ -146,9 +219,7 @@ public class Main extends Activity
             public void onClick(View view) {
                 WifiManager wm = (WifiManager) getSystemService(Context.WIFI_SERVICE);
                 if (wm.getWifiState() == WifiManager.WIFI_STATE_ENABLED) {
-                    butSnapshot.setEnabled(false);
-                    butStartTracking.setEnabled(false);
-
+                    disableScanningButtons();
                     getSnapshot(Integer.valueOf(textNumOfSamples.getText().toString()));
                 } else {
                     Toast toast = Toast.makeText(getApplicationContext(), "wifi is turned off!", Toast.LENGTH_SHORT);
@@ -168,10 +239,9 @@ public class Main extends Activity
                         deviceId = wifiInf.getMacAddress();
                     }
 
-                    butSnapshot.setEnabled(false);
-                    butStartTracking.setEnabled(false);
                     butEndTracking.setEnabled(true);
                     isTracking = true;
+                    disableScanningButtons();
                     startTracking(Integer.valueOf(textNumOfSamples.getText().toString()));
                 } else {
                     Toast toast = Toast.makeText(getApplicationContext(), "wifi is turned off!", Toast.LENGTH_SHORT);
@@ -188,8 +258,27 @@ public class Main extends Activity
             }
         });
 
+        butGatherSamples.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                WifiManager wm = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+                if (wm.getWifiState() == WifiManager.WIFI_STATE_ENABLED) {
+                    if (deviceId == null) {
+                        WifiManager wifiMan = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+                        WifiInfo wifiInf = wifiMan.getConnectionInfo();
+                        deviceId = wifiInf.getMacAddress();
+                    }
+
+                    disableScanningButtons();
+                    gatherSamples(textLocationId.getText().toString(), Integer.valueOf(textNumOfSamples.getText().toString()));
+                } else {
+                    Toast toast = Toast.makeText(getApplicationContext(), "wifi is turned off!", Toast.LENGTH_SHORT);
+                    toast.show();
+                }
+            }
+        });
     }
-    
+
     private JSONObject scanResultToJson(ScanResult scanResult) {
         JSONObject scanResultObj=new JSONObject();
         try {
@@ -226,7 +315,7 @@ public class Main extends Activity
         StringBuilder routersInfo = new StringBuilder();
         routersInfo.append("Last Updated: " + Calendar.getInstance().getTime().toString() + "\n\n");
         for (Map.Entry<String, Integer> routerLevel : routerLevels.entrySet()) {
-            routersInfo.append("Router: " + routerLevel.getKey().toString() + "\n");
+            routersInfo.append("Router: " + routerLevel.getKey() + "\n");
             routersInfo.append("LEVEL: " + routerLevel.getValue().toString() + "\n");
             routersInfo.append("\n");
         }
@@ -249,8 +338,7 @@ public class Main extends Activity
                     Map<String, Integer> routerLevels = getRouterLevels(listScanResults);
                     setRoutersInfo(routerLevels);
 
-                    butSnapshot.setEnabled(true);
-                    butStartTracking.setEnabled(true);
+                    enableScanningButtons();
                     unregisterReceiver(this);
                 } else {
                     if (wm.getWifiState() == WifiManager.WIFI_STATE_ENABLED) {
@@ -277,8 +365,7 @@ public class Main extends Activity
                 listScanResults.add(wm.getScanResults());
 
                 if (!isTracking) {
-                    butSnapshot.setEnabled(true);
-                    butStartTracking.setEnabled(true);
+                    enableScanningButtons();
                     unregisterReceiver(this);
                 } else {
                     if (listScanResults.size() > numSamples) {
@@ -302,6 +389,51 @@ public class Main extends Activity
         if (wm.getWifiState() == WifiManager.WIFI_STATE_ENABLED) {
             wm.startScan();
         }
+    }
+
+    private void gatherSamples(final String locationId, final int numSamples) {
+        progressSamples.setMax(numSamples);
+        progressSamples.setProgress(0);
+
+        IntentFilter intent = new IntentFilter();
+        intent.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
+        registerReceiver(new BroadcastReceiver(){
+
+            private int samplesLeft = numSamples;
+            
+            public void onReceive(Context context, Intent intent){
+                WifiManager wm = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+                List<ScanResult> scanResults = wm.getScanResults();
+                samplesLeft -= 1;
+                progressSamples.setProgress(numSamples - samplesLeft);
+
+                LocationSampleTask task = new LocationSampleTask(deviceId, locationId);
+                List[] tmpScanResults = {scanResults, };
+                task.execute(tmpScanResults);
+
+                if (samplesLeft == 0) {
+                    enableScanningButtons();
+                    unregisterReceiver(this);
+                }
+            }
+        }, intent );
+
+        WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        if (wm.getWifiState() == WifiManager.WIFI_STATE_ENABLED) {
+            wm.startScan();
+        }
+    }
+
+    private void disableScanningButtons() {
+        butSnapshot.setEnabled(false);
+        butStartTracking.setEnabled(false);
+        butGatherSamples.setEnabled(false);
+    }
+
+    private void enableScanningButtons() {
+        butSnapshot.setEnabled(true);
+        butStartTracking.setEnabled(true);
+        butGatherSamples.setEnabled(true);
     }
 
     @Override
