@@ -237,13 +237,13 @@ def normalize_mac(address):
 
 # model_data: location: {normed_device_id: (mean, variance)}
 TRAINING_DATA = [
-    ('../locdata/zviad1.csv', 'zviad1', (5295, 196)), #z1
-    ('../locdata/zviad2.csv', 'zviad2', (5295, 353)), #z2
-    ('../locdata/zviad3.csv', 'zviad3', (5285, 554)), #z3
-    ('../locdata/zviad4.csv', 'zviad4', (5029, 544)), #z4
-    ('../locdata/zviad5.csv', 'zviad5', (5029, 396)), #z5
-    ('../locdata/zviad6.csv', 'zviad6', (5032, 237)), #z6
-    ('../locdata/zviad7.csv', 'zviad7', (5478, 152)), #z7
+    # ('../locdata/zviad1.csv', 'zviad1', (5295, 196)), #z1
+    # ('../locdata/zviad2.csv', 'zviad2', (5295, 353)), #z2
+    # ('../locdata/zviad3.csv', 'zviad3', (5285, 554)), #z3
+    # ('../locdata/zviad4.csv', 'zviad4', (5029, 544)), #z4
+    # ('../locdata/zviad5.csv', 'zviad5', (5029, 396)), #z5
+    # ('../locdata/zviad6.csv', 'zviad6', (5032, 237)), #z6
+    # ('../locdata/zviad7.csv', 'zviad7', (5478, 152)), #z7
     ('../locdata/ft1.csv',  'ft1',  (5095, 83)),
     ('../locdata/ft2.csv',  'ft2',  (5178, 200)),
     ('../locdata/ft3.csv',  'ft3',  (5408, 258)),
