@@ -27,15 +27,15 @@ from tracker_info import update_map_info
 # YMIN = 100
 # YMAX = 1000
 # YSTEP = 25
-XMIN = 0
-XMAX = 1500
-XSTEP = 100
-YMIN = 100
-YMAX = 1200
-YSTEP = 100
+XMIN = 250
+XMAX = 5500
+XSTEP = 250
+YMIN = 50
+YMAX = 750
+YSTEP = 50
 
 # variances for different methods
-LOG_MIN_PROB=-20
+LOG_MIN_PROB = -20
 MOTION_STDEV = 25
 
 COMBO_ALPHA = 2
@@ -55,37 +55,39 @@ IMG = mpimg.imread(MAP_NAME)
 
 ROUTER_POS = {
         # Part 4
-        "AP-4-01" : (500, 1105),
-        "AP-4-02" : (450, 292),
-        "AP-4-03" : (687, 724),
-        "AP-4-04" : (1203, 315),
-        "AP-4-05" : (1130, 970),
+        "AP-4-01" : (5035, 543),
+        "AP-4-02" : (5038, 241),
+        "AP-4-03" : (5265, 537),
+        "AP-4-04" : (5325, 159),
+        "AP-4-05" : (5035, 397),
+
+        # "AP-4-01" : (500, 1105),
+        # "AP-4-02" : (450, 292),
+        # "AP-4-03" : (687, 724),
+        # "AP-4-04" : (1203, 315),
+        # "AP-4-05" : (1130, 970),
 
         # Part 3
-        "AP-3-01" : (587, 551),
-        "AP-3-02" : (921, 285),
-        "AP-3-03" : (977, 1131),
-        "AP-3-04" : (1297, 709),
-        "AP-3-05" : (2004, 300),
-        "AP-3-06" : (1996, 1116),
+        # "AP-3-01" : (587, 551),
+        # "AP-3-02" : (921, 285),
+        # "AP-3-03" : (977, 1131),
+        # "AP-3-04" : (1297, 709),
+        # "AP-3-05" : (2004, 300),
+        # "AP-3-06" : (1996, 1116),
 
         # Part 2
-        "AP-2-01" : (500, 1105),
-        "AP-2-02" : (450, 292),
-        "AP-2-03" : (687, 724),
-        "AP-2-04" : (1203, 315),
-        "AP-2-05" : (1130, 970),
+        # "AP-2-01" : (500, 1105),
+        # "AP-2-02" : (450, 292),
+        # "AP-2-03" : (687, 724),
+        # "AP-2-04" : (1203, 315),
+        # "AP-2-05" : (1130, 970),
 
 
         # Part 1
-        "AP-1-01" : (589, 514),
-        "AP-1-02" : (1029, 284),
-        "AP-1-03" : (972, 659),
-        "AP-1-04" : (1014, 1092),
-        "AP-1-05" : (1741, 296),
-        "AP-1-06" : (1611, 1100),
-        "AP-1-07" : (2581, 265),
-        "AP-1-08" : (2585, 1109),
+
+        # "AP-1-06" : (1611, 1100),
+        # "AP-1-07" : (2581, 265),
+        # "AP-1-08" : (2585, 1109),
         }
 
 
@@ -237,7 +239,7 @@ def get_mean_and_variance(samples):
 
     mx = mean(xs)
     my = mean(ys)
-    return (mx, my), (math.sqrt(mean((xs-mx).dot(xs-mx))), math.sqrt(mean((ys-my).dot(ys-my))))
+    return (mx, my), (50, 50) #(math.sqrt(mean((xs-mx).dot(xs-mx))), math.sqrt(mean((ys-my).dot(ys-my))))
 
 def track_location(device_id, timestamp, router_levels):
     global device_samples
@@ -272,7 +274,7 @@ def track_location(device_id, timestamp, router_levels):
             #image_data.append(draw_image(device_samples[i][device_id]))
 
             mean_xy, var_xy = get_mean_and_variance(device_samples[i][device_id])
-            device_stats[device_id + "_" + i] = {
+            device_stats[device_id + "_" + str(i)] = {
                     "location" : mean_xy,
                     "variance" : var_xy,
                     "color"    : ["blue", "red", "yellow"][i],
