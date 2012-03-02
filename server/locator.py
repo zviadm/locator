@@ -11,7 +11,6 @@ import tornado.ioloop
 import tornado.web
 
 import rpcs
-import tracker
 from tracker_info import get_map_info, get_map_images
 DEBUG_MODE = False
 
@@ -19,6 +18,7 @@ class RpcRequestHandler(tornado.web.RequestHandler):
     RPC_METHODS = {
         "location_sample" : rpcs.location_sample,
         "track_location"  : rpcs.track_location,
+        "get_locations"   : rpcs.get_locations,
         }
 
     def __handle_request(self, args):
@@ -29,12 +29,10 @@ class RpcRequestHandler(tornado.web.RequestHandler):
             method = args.pop("method")
         except Exception:
             self.send_error(400)
-            self.finish()
             return
 
         if not method in RpcRequestHandler.RPC_METHODS:
             self.send_error(404)
-            self.finish()
             return
 
         logging.info("RPC[%s]: args: %s" % (method, simplejson.dumps(args, sort_keys=True)))

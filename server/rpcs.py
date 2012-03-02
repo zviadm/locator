@@ -1,6 +1,7 @@
 from __future__ import with_statement, absolute_import
 import os
 import threading
+import time
 
 import tracker
 
@@ -27,3 +28,9 @@ def track_location(device_id, timestamp, router_levels):
     tracker.track_location(device_id, timestamp, router_levels)
     return { "ret" : "ok" }
 
+def get_locations():
+    return {
+        "locations" : {
+            "c8:aa:21:b0:53:c3" : (1000 + (int(time.time()) % 20) * 80, 200 + (int(time.time()) % 20) * 30),
+            }
+        }

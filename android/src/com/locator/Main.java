@@ -211,6 +211,7 @@ public class Main extends Activity
             for (ScanResult scanResult : scanResults) {
                 if (BSSID_TO_ROUTER.containsKey(scanResult.BSSID)) {
                     String router = BSSID_TO_ROUTER.get(scanResult.BSSID);
+                    Log.d(TAG, "ROUTER CHANNEL: " + scanResult.frequency);
                     if (routerLevels.containsKey(router)) {
                         routerLevels.put(router, Math.max(scanResult.level, routerLevels.get(router)));
                     } else {
