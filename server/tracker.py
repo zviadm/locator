@@ -303,6 +303,7 @@ device_samples = [
         defaultdict(lambda: [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)]),
         defaultdict(lambda: [[1.0, (x, y)] for x in range(XMIN, XMAX, XSTEP) for y in range(YMIN, YMAX, YSTEP)]),
         ]
+device_scan_results = {}
 device_locks_lock = threading.Lock()
 device_locks = {}
 
@@ -316,7 +317,21 @@ def get_mean_and_variance(samples):
     return (mx, my), (math.sqrt(dot((xs-mx), (xs-mx)) / len(xs)), math.sqrt(dot((ys-my), (ys-my)) / len(ys)))
     #return (mx, my), (50, 50) #(math.sqrt(mean((xs-mx).dot(xs-mx))), math.sqrt(mean((ys-my).dot(ys-my))))
 
-def track_location(device_id, timestamp, router_levels):
+def get_router_levels(list_scan_results):
+    router_levels = {}
+    for timestamp, scan_results in list_scan_results:
+        for scan_result in scan_results:
+            if scan_result["BSSID"] in BSSID_TO_ROUTER:
+                router = BSSID_TO_ROUTER[scan_result["BSSID"]]
+                if not router in router_levels:
+                    router_levels[router] = []
+                router_levels[router].append(scan_result["level"])
+
+    for router, levels in router_levels.items():
+        router_levels[router] = sum(router_levels[router]) / len(router_levels[router])
+    return router_levels
+
+def track_location(device_id, timestamp, router_levels=None, scan_results=None):
     global device_samples
     global device_locks
 
@@ -326,6 +341,13 @@ def track_location(device_id, timestamp, router_levels):
                 device_locks[device_id] = threading.Lock()
 
     with device_locks[device_id]:
+        if scan_results:
+            if not device_id in device_scan_results:
+                device_scan_results[device_id] = []
+            device_scan_results[device_id].append((timestamp, scan_results))
+            device_scan_results[device_id] = device_scan_results[device_id][-3:]
+            router_levels = get_router_levels(device_scan_results[device_id])
+
         readings = sorted(router_levels.iteritems(), key=itemgetter(1), reverse=True)
         router_ratios = get_router_distance_ratios(readings)
         router_distances = get_distances_from_readings(readings)

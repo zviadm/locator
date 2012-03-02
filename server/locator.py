@@ -18,6 +18,7 @@ class RpcRequestHandler(tornado.web.RequestHandler):
     RPC_METHODS = {
         "location_sample" : rpcs.location_sample,
         "track_location"  : rpcs.track_location,
+        "track_location2" : rpcs.track_location2,
         "get_locations"   : rpcs.get_locations,
         }
 
