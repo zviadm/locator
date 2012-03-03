@@ -130,7 +130,7 @@
                 fade_cnt = (fade_cnt + 1) % (2 * FADE_SPEED);
                 for (var device in current_locations) {
                     var device_stat = device_stats[device];
-                    $("#" + device).css('opacity', 0.25 + 0.75 * (Math.abs(fade_cnt - FADE_SPEED) / FADE_SPEED));
+                    $("#" + device).css('opacity', 0.50 + 0.50 * (Math.abs(fade_cnt - FADE_SPEED) / FADE_SPEED));
                 }
             }
 
